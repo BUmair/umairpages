@@ -380,3 +380,17 @@ section > ul, .card ul, .card ol, .doc ol.steps, .doc ul, .doc ol {
 .to-top a:hover { border-color: var(--fg); }
 
 .award { font-size: 0.9rem; font-weight: 600; text-align: center; margin: 0 0 12px; }
+
+/* Visual layout: roles, skills, certifications */
+.role { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 2px 16px; margin-bottom: 8px; }
+.role h3 { margin: 0; }
+.role .meta { margin: 0; display: flex; flex-wrap: wrap; gap: 0 12px; }
+.role .meta span + span::before { content: "·"; margin-right: 12px; opacity: 0.6; }
+
+.skill-groups { display: grid; gap: 22px; text-align: left; max-width: 44rem; margin: 0 auto; }
+.skill-group h3 { font-size: 0.95rem; font-weight: 600; margin: 0 0 8px; }
+.skill-group .tags { margin: 0; justify-content: flex-start; }
+
+section > ul.cert-list { display: block; list-style: none; padding: 0; margin: 0 auto; max-width: 44rem; }
+section > ul.cert-list li { padding: 12px 0; border-bottom: 1px solid var(--line); }
+section > ul.cert-list li:last-child { border-bottom: 0; }
