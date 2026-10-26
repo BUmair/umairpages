@@ -1,0 +1,24 @@
+name: Prune Pages deployments
+
+on:
+  page_build:
+
+permissions:
+  deployments: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep only the newest github-pages deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          # The API lists deployments newest first, so skip the first one.
+          ids=$(gh api "repos/$REPO/deployments?environment=github-pages&per_page=100" --jq '.[1:][].id')
+          for id in $ids; do
+            gh api -X POST "repos/$REPO/deployments/$id/statuses" -f state=inactive >/dev/null
+            gh api -X DELETE "repos/$REPO/deployments/$id" >/dev/null
+            echo "Deleted deployment $id"
+          done

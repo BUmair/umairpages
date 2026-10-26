@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Documentation for the AWS Cloud Infrastructure project: a segmented VPC, IAM least-privilege access, two EC2 servers, and a static website on S3.">
+  <title>AWS Cloud Infrastructure · Documentation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+  <main class="doc">
+    <p class="back"><a href="index.html#projects">← Back to portfolio</a></p>
+
+    <header class="doc-head">
+      <p class="eyebrow">Project documentation</p>
+      <h1>AWS Cloud Infrastructure</h1>
+      <p class="lede">A small, segmented network on AWS in us-east-1 (North America East). Two public subnets in separate Availability Zones, each with its own route table and a web server. Access is granted by least privilege, and a static website is hosted on S3 with its public access reviewed.</p>
+    </header>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#overview">Overview</a>
+      <a href="#case-study">Case study</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#network">1. Network</a>
+      <a href="#routing">2. Routing</a>
+      <a href="#security">3. Security groups</a>
+      <a href="#iam">4. IAM</a>
+      <a href="#servers">5. Servers</a>
+      <a href="#website">6. S3 website</a>
+      <a href="#verify">Verify</a>
+      <a href="#troubleshoot">Troubleshooting</a>
+      <a href="#lessons">Lessons learned</a>
+      <a href="#cleanup">Cleanup</a>
+    </nav>
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>The goal was a repeatable environment where every resource has one job and only the traffic it needs is allowed.</p>
+      <ul>
+        <li><strong>Network:</strong> one VPC, two public subnets in two Availability Zones, and an internet gateway.</li>
+        <li><strong>Routing:</strong> two route tables, one per subnet.</li>
+        <li><strong>Security:</strong> three security groups, one per job: admin, web, and internal.</li>
+        <li><strong>Access:</strong> two users, one group, two roles, and four policies.</li>
+        <li><strong>Compute:</strong> two Linux servers, managed over SSH and Systems Manager.</li>
+        <li><strong>Website:</strong> a static site on S3, with public access limited to reading the site files.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="case-study">
+      <h2>The problem this solves</h2>
+      <p>Many small offices run their internal app on a single computer that is reachable from the internet. Everyone shares one administrator login, and the public information page sits on a hosting service that the team can't easily lock down. One lost password can lock out the whole office.</p>
+      <h3>What this design does</h3>
+      <ul>
+        <li>Runs the app on servers that accept connections only from the places they need.</li>
+        <li>Gives each person only the access their role requires.</li>
+        <li>Hosts the public page where visitors can read it but can't change it.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <p>Read the diagram in numbered order. A visitor's request enters through the internet gateway, reaches a server in one of two subnets, and is allowed by that server's security group. The website is served separately from S3.</p>
+      <figure class="diagram">
+        <svg viewBox="0 0 720 400" role="img" aria-labelledby="arch-title arch-desc">
+          <title id="arch-title">Infrastructure overview</title>
+          <desc id="arch-desc">Visitors reach two web servers through an internet gateway. Each server sits in its own public subnet inside the VPC. Visitors also reach a separate S3 bucket that hosts the website.</desc>
+          <defs><marker id="arw" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fff"/></marker></defs>
+
+          <rect x="20" y="130" width="140" height="100" rx="14" fill="#0a0a0a" stroke="#fff" stroke-width="2"/>
+          <text x="90" y="170" fill="#fff" font-size="20" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">Visitors</text>
+          <text x="90" y="198" fill="#fff" font-size="15" text-anchor="middle" font-family="Geist, sans-serif">use a browser</text>
+
+          <line x1="160" y1="180" x2="210" y2="180" stroke="#fff" stroke-width="2" marker-end="url(#arw)"/>
+          <rect x="212" y="130" width="130" height="100" rx="14" fill="#0a0a0a" stroke="#fff" stroke-width="2"/>
+          <text x="277" y="170" fill="#fff" font-size="18" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">Internet</text>
+          <text x="277" y="196" fill="#fff" font-size="18" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">gateway</text>
+
+          <line x1="344" y1="180" x2="378" y2="180" stroke="#fff" stroke-width="2" marker-end="url(#arw)"/>
+          <rect x="380" y="40" width="320" height="260" rx="18" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="8 6"/>
+          <text x="400" y="72" fill="#fff" font-size="16" font-weight="600" font-family="Geist, sans-serif">Your VPC</text>
+
+          <rect x="400" y="90" width="135" height="200" rx="12" fill="#111114" stroke="#fff"/>
+          <text x="467" y="120" fill="#fff" font-size="16" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">Subnet A</text>
+          <rect x="420" y="140" width="95" height="60" rx="10" fill="#fff"/>
+          <text x="467" y="177" fill="#000" font-size="16" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">Server A</text>
+          <text x="467" y="250" fill="#fff" font-size="14" text-anchor="middle" font-family="Geist, sans-serif">web and admin</text>
+
+          <rect x="545" y="90" width="135" height="200" rx="12" fill="#111114" stroke="#fff"/>
+          <text x="612" y="120" fill="#fff" font-size="16" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">Subnet B</text>
+          <rect x="565" y="140" width="95" height="60" rx="10" fill="#fff"/>
+          <text x="612" y="177" fill="#000" font-size="16" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">Server B</text>
+          <text x="612" y="250" fill="#fff" font-size="14" text-anchor="middle" font-family="Geist, sans-serif">web and admin</text>
+
+          <line x1="90" y1="230" x2="90" y2="290" stroke="#fff" stroke-width="2" marker-end="url(#arw)"/>
+          <rect x="20" y="292" width="300" height="88" rx="14" fill="#0a0a0a" stroke="#fff" stroke-width="2"/>
+          <text x="170" y="326" fill="#fff" font-size="18" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">Website bucket (S3)</text>
+          <text x="170" y="352" fill="#fff" font-size="15" text-anchor="middle" font-family="Geist, sans-serif">holds index.html and images</text>
+
+          <circle cx="185" cy="160" r="14" fill="#fff"/>
+          <text x="185" y="166" fill="#000" font-size="16" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">1</text>
+          <circle cx="112" cy="260" r="14" fill="#fff"/>
+          <text x="112" y="266" fill="#000" font-size="16" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">2</text>
+        </svg>
+        <figcaption><strong>1</strong> Visitors reach the two web servers through the internet gateway. <strong>2</strong> The website itself is served from its own S3 bucket, separate from the servers.</figcaption>
+      </figure>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="network">
+      <h2>Step 1: Build the network</h2>
+      <ol class="steps">
+        <li><strong>Create the VPC.</strong> In the VPC console for us-east-1, choose <em>VPC only</em>, name it <code>webapp-vpc</code>, and set the IPv4 CIDR to <code>10.0.0.0/16</code>.</li>
+        <li><strong>Create two public subnets</strong> in two Availability Zones: <code>webapp-public-a</code> in the first zone with <code>10.0.0.0/24</code>, and <code>webapp-public-b</code> in the second zone with <code>10.0.1.0/24</code>.</li>
+        <li><strong>Turn on auto-assign public IPv4</strong> for both subnets (Actions → Edit subnet settings), so each server gets a public address.</li>
+        <li><strong>Create and attach an internet gateway</strong> named <code>webapp-igw</code> to <code>webapp-vpc</code>.</li>
+      </ol>
+      <p class="callout">Why two Availability Zones? If one zone has an outage, the other subnet and its server keep running.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="routing">
+      <h2>Step 2: Set up two route tables</h2>
+      <p>Each public subnet gets its own route table. Both send internet traffic to the same gateway, so either subnet can serve visitors even if the other is down.</p>
+      <ol class="steps">
+        <li><strong>Rename the VPC's default route table</strong> to <code>webapp-public-rt-a</code>. It starts with only the local route.</li>
+        <li><strong>Add the internet route:</strong> Routes → Edit routes → Add route, destination <code>0.0.0.0/0</code>, target <code>webapp-igw</code>.</li>
+        <li><strong>Associate it with <code>webapp-public-a</code></strong> (Subnet associations → Edit subnet associations).</li>
+        <li><strong>Create <code>webapp-public-rt-b</code></strong> in the same VPC, add the same <code>0.0.0.0/0</code> route to <code>webapp-igw</code>, and associate it with <code>webapp-public-b</code>.</li>
+      </ol>
+      <table>
+        <thead><tr><th>Route table</th><th>Destination</th><th>Target</th><th>Subnet</th></tr></thead>
+        <tbody>
+          <tr><td><code>webapp-public-rt-a</code></td><td><code>10.0.0.0/16</code></td><td>local</td><td><code>webapp-public-a</code></td></tr>
+          <tr><td><code>webapp-public-rt-a</code></td><td><code>0.0.0.0/0</code></td><td><code>webapp-igw</code></td><td><code>webapp-public-a</code></td></tr>
+          <tr><td><code>webapp-public-rt-b</code></td><td><code>10.0.0.0/16</code></td><td>local</td><td><code>webapp-public-b</code></td></tr>
+          <tr><td><code>webapp-public-rt-b</code></td><td><code>0.0.0.0/0</code></td><td><code>webapp-igw</code></td><td><code>webapp-public-b</code></td></tr>
+        </tbody>
+      </table>
+      <p class="callout">A subnet is "public" only when its route table has a <code>0.0.0.0/0</code> route to an internet gateway. The subnet setting alone is not enough.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="security">
+      <h2>Step 3: Create three security groups</h2>
+      <p>Each group has one purpose, so every rule has a clear reason:</p>
+      <table>
+        <thead><tr><th>Group</th><th>Purpose</th><th>Inbound rules</th></tr></thead>
+        <tbody>
+          <tr><td><code>webapp-admin-sg</code></td><td>Remote administration</td><td>SSH (TCP 22) from <strong>my IP address only</strong></td></tr>
+          <tr><td><code>webapp-web-sg</code></td><td>Web traffic</td><td>HTTP (TCP 80) from <code>0.0.0.0/0</code></td></tr>
+          <tr><td><code>webapp-internal-sg</code></td><td>Traffic between the two servers</td><td>All TCP from <code>webapp-internal-sg</code> itself</td></tr>
+        </tbody>
+      </table>
+      <p>Outbound rules stay at the default (all outbound allowed), so the servers can install updates. AWS warns when a rule allows <code>0.0.0.0/0</code>. That's expected for the web group, but SSH must never be open to everyone.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="iam">
+      <h2>Step 4: Grant access with IAM</h2>
+      <p>The access model uses the least privilege each identity needs:</p>
+      <table>
+        <thead><tr><th>Name</th><th>Type</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>ops-admin</code></td><td>User</td><td>Builds and manages the project</td></tr>
+          <tr><td><code>dev-engineer</code></td><td>User</td><td>Works only on development servers, through <code>developers</code></td></tr>
+          <tr><td><code>developers</code></td><td>Group</td><td>Holds the <code>developer-ec2-policy</code> policy</td></tr>
+          <tr><td><code>ec2-ssm-role</code></td><td>Role</td><td>Attached to the servers, so Systems Manager can manage them without open SSH</td></tr>
+          <tr><td><code>ops-monitoring-role</code></td><td>Role</td><td>Read-only checks for the website and server inventory, used by <code>ops-admin</code></td></tr>
+        </tbody>
+      </table>
+      <h3>The four policies</h3>
+      <ol class="steps">
+        <li><strong><code>developer-ec2-policy</code></strong> (attached to <code>developers</code>): lets the developer manage EC2 instances only when the instance has the tag <code>Env=development</code>, and denies changes to tags on any instance.</li>
+        <li><strong><code>ec2-read-only-policy</code></strong> (attached to <code>ops-monitoring-role</code>): lets the role list EC2 instances.</li>
+        <li><strong><code>ssm-access-policy</code></strong> (attached to <code>ec2-ssm-role</code>): lets the servers connect to Systems Manager.</li>
+        <li><strong><code>website-read-policy</code></strong> (attached to <code>ops-monitoring-role</code>): lets the role read the website files in the bucket, and nothing else.</li>
+      </ol>
+      <p>The developer policy is the most important one. It allows all EC2 actions only on development instances, and the explicit deny stops any change to tags:</p>
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ManageDevelopmentOnly",
+      "Effect": "Allow",
+      "Action": "ec2:*",
+      "Resource": "*",
+      "Condition": { "StringEquals": { "ec2:ResourceTag/Env": "development" } }
+    },
+    {
+      "Sid": "NoTagChanges",
+      "Effect": "Deny",
+      "Action": ["ec2:CreateTags", "ec2:DeleteTags"],
+      "Resource": "*"
+    }
+  ]
+}</code></pre>
+      <p class="callout">A deny always overrides an allow. Turn on multi-factor authentication for both users, and never use the root account for daily work.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="servers">
+      <h2>Step 5: Launch two EC2 servers</h2>
+      <ol class="steps">
+        <li><strong>Launch <code>webapp-web-01</code></strong>: Amazon Linux 2023, <code>t2.micro</code>, in <code>webapp-public-a</code>. Create a key pair named <code>webapp-keypair</code> and keep the <code>.pem</code> file safe.</li>
+        <li><strong>Attach security groups:</strong> <code>webapp-admin-sg</code>, <code>webapp-web-sg</code>, and <code>webapp-internal-sg</code>.</li>
+        <li><strong>Tag it</strong> <code>Env=development</code>, so the developer policy applies.</li>
+        <li><strong>Launch <code>webapp-web-02</code></strong> the same way, in <code>webapp-public-b</code>.</li>
+        <li><strong>Attach <code>ec2-ssm-role</code></strong> to both servers as the instance profile.</li>
+      </ol>
+      <p>Connect from your computer, then check the server:</p>
+<pre><code># Replace the public IP with the server's address
+chmod 400 webapp-keypair.pem
+ssh -i webapp-keypair.pem ec2-user@&lt;public-ip&gt;
+
+uname -a
+systemctl status sshd
+df -h</code></pre>
+      <p>For everyday administration, use Systems Manager Session Manager. It needs no open SSH port, and every session is logged.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="website">
+      <h2>Step 6: Host the website on S3</h2>
+      <p>The site is hosted from a bucket, not from the servers, so it stays up even if a server is stopped. Public access is limited to reading the site files:</p>
+      <ol class="steps">
+        <li><strong>Create the bucket</strong> <code>webapp-site-[yourname]</code> in us-east-1. Bucket names are unique worldwide.</li>
+        <li><strong>Upload</strong> <code>index.html</code> and its images.</li>
+        <li><strong>Enable static website hosting</strong> in Properties, with <code>index.html</code> as the index document.</li>
+        <li><strong>Limit public access.</strong> Keep all four Block Public Access settings on, except <em>Block public access to buckets and objects granted through new public bucket policies</em>. Then add a policy that allows only reading the site's files:</li>
+      </ol>
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "PublicReadSiteFiles",
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::webapp-site-yourname/*"
+  }]
+}</code></pre>
+      <p>This keeps the bucket private by default and opens only one action, <code>GetObject</code>, for the site's files. Visitors can't list, write, or delete anything.</p>
+      <p class="callout">Check the settings after every change. If a new policy grants more than <code>s3:GetObject</code>, remove it.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="verify">
+      <h2>Verify</h2>
+      <ul>
+        <li>SSH to each server works from your IP address, and is refused from anywhere else.</li>
+        <li>The website loads from the bucket's website endpoint, and anonymous uploads are refused.</li>
+        <li>The two servers can reach each other over <code>webapp-internal-sg</code>.</li>
+        <li><code>dev-engineer</code> can see and stop instances tagged <code>Env=development</code>, and can't change any tags.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="troubleshoot">
+      <h2>Troubleshooting</h2>
+      <table>
+        <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>SSH times out</td><td>Your IP isn't in <code>webapp-admin-sg</code>, or the server has no public IP</td><td>Update the admin rule and check auto-assign on the subnet</td></tr>
+          <tr><td>Website shows 403 Forbidden</td><td>The bucket policy is missing, or a Block Public Access setting still blocks it</td><td>Review the policy and the four settings</td></tr>
+          <tr><td>Servers can't update packages</td><td>The subnet's route table has no <code>0.0.0.0/0</code> route</td><td>Check both route tables and their subnet associations</td></tr>
+          <tr><td>Developer gets "not authorized"</td><td>The instance is missing the <code>Env=development</code> tag</td><td>Add the tag, or check the policy condition</td></tr>
+        </tbody>
+      </table>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="lessons">
+      <h2>Lessons learned</h2>
+      <p>Building a network like this usually runs into the same few problems. Here is what they look like, why they happen, and how to fix them.</p>
+      <table>
+        <thead><tr><th>What goes wrong</th><th>Why it happens</th><th>How to fix it</th></tr></thead>
+        <tbody>
+          <tr><td>A server is "public" but the website won't load</td><td>The subnet has a public IP setting, but its route table never got an internet route</td><td>Open the subnet's route table and confirm it sends <code>0.0.0.0/0</code> to the internet gateway. Give each route table a name that matches its subnet.</td></tr>
+          <tr><td>You suddenly can't connect over SSH</td><td>Home internet providers change your public IP address from time to time, so the admin rule no longer matches you</td><td>Update the admin rule to your current IP. For a long-term setup, use Systems Manager Session Manager instead of SSH.</td></tr>
+          <tr><td>SSH refuses the key with an <code>UNPROTECTED PRIVATE KEY FILE</code> warning</td><td>The key file can be read by other users on your computer, and SSH refuses to trust it</td><td>Run <code>chmod 400</code> on the key file so only you can read it.</td></tr>
+          <tr><td>An IAM policy won't save</td><td>There is a typo in the JSON, such as a missing comma or quotation mark</td><td>Paste the policy into the IAM policy editor. It points to the line with the error.</td></tr>
+          <tr><td>The website bucket name is already taken</td><td>Bucket names must be unique across all of AWS, not just your own account</td><td>Add your name or a project code to the bucket name.</td></tr>
+          <tr><td>A developer can't stop a server</td><td>The server doesn't have the <code>Env=development</code> tag, so the developer policy doesn't apply to it</td><td>Add the tag to the server. Tag every server when you launch it so this doesn't happen.</td></tr>
+          <tr><td>The AWS bill is higher than expected</td><td>Servers were left running after testing</td><td>Stop or terminate servers when you're finished. Set a billing alarm in the Billing console so you get warned early.</td></tr>
+          <tr><td>Servers can't install updates</td><td>The route table has no internet route, or the network ACL blocks outgoing traffic</td><td>Check the internet route first, then check the network ACL's outbound rules.</td></tr>
+        </tbody>
+      </table>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="cleanup">
+      <h2>Cleanup</h2>
+      <p>To avoid charges: terminate both servers, empty and delete the website bucket, then remove the users, group, roles, and policies. Next, detach and delete <code>webapp-igw</code>, delete both route tables, the security groups, the subnets, and finally the VPC.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="year"></span> Umair Bhalli</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
