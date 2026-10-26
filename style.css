@@ -394,3 +394,7 @@ section > ul, .card ul, .card ol, .doc ol.steps, .doc ul, .doc ol {
 section > ul.cert-list { display: block; list-style: none; padding: 0; margin: 0 auto; max-width: 44rem; }
 section > ul.cert-list li { padding: 12px 0; border-bottom: 1px solid var(--line); }
 section > ul.cert-list li:last-child { border-bottom: 0; }
+
+/* Even skill tag grid */
+.skill-group .tags { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.skill-group .tags span { text-align: center; white-space: nowrap; }
