@@ -14,7 +14,7 @@
     <header class="doc-head">
       <p class="eyebrow">Project documentation</p>
       <h1>AWS Serverless Automation</h1>
-      <p class="lede">A file-processing workflow in us-east-1 (North America East). Uploading a file to S3 triggers a Lambda function directly, so no server waits for files and no compute runs while the bucket is idle. CloudWatch records every run.</p>
+      <p class="lede">A file-routing workflow in us-east-1 (North America East). Uploading a file to S3 triggers a Lambda function directly, so no server waits for files and no compute runs while the bucket is idle. CloudWatch records every run.</p>
     </header>
 
     <nav class="toc" aria-label="On this page">
@@ -50,8 +50,8 @@
       <p>Small bookkeeping and admin teams often receive files in several formats every day, such as bank statements, accounting exports, and scanned receipts. Someone downloads each file, sorts it by type, and renames it before filing. This takes a lot of time, and files are sometimes misfiled.</p>
       <h3>What this design does</h3>
       <ul>
-        <li>Processes each file automatically as soon as it arrives.</li>
-        <li>Puts all processed results in one folder that staff can review.</li>
+        <li>Routes each file to the function for its type automatically as soon as it arrives.</li>
+        <li>Writes each output to one folder that staff can review.</li>
         <li>Charges only for processing that actually happens.</li>
       </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
