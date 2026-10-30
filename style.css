@@ -333,7 +333,7 @@ section > ul, .card ul, .card ol, .doc ol.steps, .doc ul, .doc ol {
   text-align: left;
 }
 .card { text-align: center; }
-.card ul { padding-left: 0; list-style-position: inside; }
+.card ul { padding-left: 18px; list-style-position: outside; }
 .card-links {
   display: flex;
   flex-wrap: wrap;
@@ -408,3 +408,7 @@ section > ul.cert-list li:last-child { border-bottom: 0; }
 @media (max-width: 640px) {
   #projects .grid > .card { flex-basis: 100%; }
 }
+
+/* Projects: centered text without bullets, so the cards read as one column */
+#projects .card ul { list-style: none; padding-left: 0; text-align: center; display: block; }
+#projects .card li { text-align: center; }
