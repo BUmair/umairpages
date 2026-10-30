@@ -412,3 +412,7 @@ section > ul.cert-list li:last-child { border-bottom: 0; }
 /* Projects: centered text without bullets, so the cards read as one column */
 #projects .card ul { list-style: none; padding-left: 0; text-align: center; display: block; }
 #projects .card li { text-align: center; }
+
+/* Projects: centered heading block, so the Clear Home title matches the other cards */
+#projects .role { display: block; text-align: center; }
+#projects .role .meta { justify-content: center; }
