@@ -398,3 +398,13 @@ section > ul.cert-list li:last-child { border-bottom: 0; }
 /* Even skill tag grid */
 .skill-group .tags { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .skill-group .tags span { text-align: center; white-space: nowrap; }
+
+/* Projects: center each row, so a short last row stays balanced */
+#projects .grid { display: flex; flex-wrap: wrap; justify-content: center; }
+#projects .grid > .card { flex: 0 1 calc(33.333% - 11px); min-width: 280px; }
+@media (max-width: 960px) {
+  #projects .grid > .card { flex-basis: calc(50% - 8px); }
+}
+@media (max-width: 640px) {
+  #projects .grid > .card { flex-basis: 100%; }
+}
