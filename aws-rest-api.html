@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Documentation for a serverless REST API using API Gateway, Lambda, DynamoDB, and a Cognito JWT authorizer.">
+  <meta name="description" content="A serverless items API with API Gateway, Lambda, DynamoDB, and Cognito JWT authorization on write routes.">
   <title>Serverless REST API · Documentation</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,27 +19,30 @@
 
     <nav class="toc" aria-label="On this page">
       <a href="#overview">Overview</a>
+      <a href="#decisions">Decisions</a>
       <a href="#architecture">Architecture</a>
       <a href="#routes">Routes</a>
-      <a href="#build">Build steps</a>
-      <a href="#verify">Verification</a>
-      <a href="#issues">Issues I hit</a>
+      <a href="#verification">Verification</a>
+      <a href="#issues">Issues</a>
+      <a href="#reproduce">Reproduce it</a>
       <a href="#next">What's next</a>
-      <a href="#cleanup">Cleanup</a>
     </nav>
 
     <section id="overview">
-      <h2>Overview</h2>
-      <p>Reads are public, and writes need a signed-in user:</p>
+      <h2>What I built</h2>
+      <p>An items API. Anyone can list or read items. Only signed-in users can create or delete them. API Gateway routes requests, Lambda runs the logic, DynamoDB stores the items, and Cognito issues the tokens.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+    <section id="decisions">
+      <h2>Decisions</h2>
       <ul>
-        <li><strong>Public reads.</strong> Anyone can list items or get one by ID.</li>
-        <li><strong>Protected writes.</strong> Creating and deleting items require a Cognito ID token. Without one, the API returns <code>401</code>.</li>
-        <li><strong>Least privilege.</strong> The Lambda's role can use only the four DynamoDB actions it needs, on the one table.</li>
+        <li><strong>Public reads, protected writes.</strong> The JWT authorizer is attached to POST and DELETE only. Without a token, those routes return 401.</li>
+        <li><strong>One shared integration.</strong> All four routes invoke the same Lambda function.</li>
+        <li><strong>Least privilege.</strong> The Lambda role can use only <code>Scan</code>, <code>GetItem</code>, <code>PutItem</code>, and <code>DeleteItem</code>, and only on the one table.</li>
         <li><strong>Logging.</strong> Each request writes a line to CloudWatch Logs.</li>
       </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
     <section id="architecture">
       <h2>Architecture</h2>
       <p>The client signs in with Cognito to get a token. API Gateway checks the token on the write routes, then invokes the Lambda function.</p>
@@ -49,7 +52,6 @@
       </figure>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
     <section id="routes">
       <h2>Routes</h2>
       <ul class="checks">
@@ -60,61 +62,40 @@
       </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
-    <details class="steps">
-      <summary>Build steps (expand)</summary>
-    <section id="build">
-      <h2>Build steps</h2>
-      <ol class="steps">
-        <li><strong>DynamoDB:</strong> create table <code>items</code> with partition key <code>id</code> (String), on-demand capacity.</li>
-        <li><strong>Cognito:</strong> create a user pool with email sign-in and a single-page app client with no secret. Enable the username-and-password flow.</li>
-        <li><strong>Lambda:</strong> create <code>items-api</code> on Python 3.12. Set the handler to <code>lambda_function.handler</code> and add the environment variable <code>TABLE_NAME=items</code>.</li>
-        <li><strong>Permissions:</strong> add an inline policy that allows <code>Scan</code>, <code>GetItem</code>, <code>PutItem</code>, and <code>DeleteItem</code> on the table's ARN only.</li>
-        <li><strong>API Gateway:</strong> create an HTTP API, add the four routes, and attach one shared Lambda integration to all of them.</li>
-        <li><strong>Authorizer:</strong> create a JWT authorizer with the user pool's issuer URL and the app client ID as the audience. Attach it to POST and DELETE only.</li>
-        <li><strong>Deploy:</strong> create the <code>$default</code> stage with auto-deploy on.</li>
-      </ol>
-      <p class="to-top"><a href="#top">Back to top ↑</a></p>
-    </section>
-    </details>
-
-    <section id="verify">
-      <h2>Verification</h2>
-      <ul class="checks">
-        <li><strong>GET <code>/items</code></strong> — 200, <code>[]</code> — Verified</li>
-        <li><strong>POST and DELETE without a token</strong> — 401 — Verified</li>
-        <li><strong>POST with a Cognito ID token</strong> — 201, item returned — Verified</li>
-        <li><strong>GET after POST</strong> — Item appears in the list — Verified</li>
-        <li><strong>DELETE with a token</strong> — 204, then GET returns <code>[]</code> — Verified</li>
+    <section id="verification">
+      <h2>How I verified it</h2>
+      <ul>
+        <li>GET <code>/items</code> returned 200 and an empty list.</li>
+        <li>POST and DELETE without a token returned 401.</li>
+        <li>POST with a Cognito ID token returned 201, and the item appeared in the next GET.</li>
+        <li>DELETE with a token returned 204, and the next GET returned an empty list.</li>
       </ul>
-      <p class="callout">Browsers can't send a POST or DELETE directly, so the authenticated checks ran from the command line with <code>curl</code>. The token came from Cognito's sign-in call.</p>
+      <p>I ran the authenticated checks with curl, using a token from Cognito's sign-in call.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
     <section id="issues">
-      <h2>Issues I hit</h2>
-      <ul class="checks">
-        <li><strong><code>Runtime.HandlerNotFound</code> on every request</strong> — The console's default handler name didn't match the code — Set the handler to <code>lambda_function.handler</code>.</li>
-        <li><strong><code>GET /items</code> returned 404 after cleanup</strong> — Removing the extra integrations also removed the route's integration — Recreated the route and attached the shared integration.</li>
-        <li><strong>Integration couldn't be deleted</strong> — A route still referenced it — Point each route at the shared integration first, then delete the extra ones.</li>
-        <li><strong>Sign-in failed with a temporary password</strong> — Console-created users must change their password at first sign-in — Answer the <code>NEW_PASSWORD_REQUIRED</code> challenge with <code>RespondToAuthChallenge</code>.</li>
+      <h2>What broke and how I fixed it</h2>
+      <ul>
+        <li><strong>Runtime.HandlerNotFound on every request.</strong> The console's default handler name didn't match the code. Fix: I set the handler to <code>lambda_function.handler</code>.</li>
+        <li><strong>GET /items returned 404 after cleanup.</strong> Removing the extra integrations also removed the route's integration. Fix: I recreated the route and attached the shared integration.</li>
+        <li><strong>An integration couldn't be deleted.</strong> A route still referenced it. Fix: I pointed each route at the shared integration first, then deleted the extra ones.</li>
+        <li><strong>Sign-in failed with a temporary password.</strong> Users created in the console must change their password at first sign-in. Fix: I answered the <code>NEW_PASSWORD_REQUIRED</code> challenge with <code>RespondToAuthChallenge</code>.</li>
       </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
+    <section id="reproduce">
+      <h2>Reproduce it</h2>
+      <p>The source for this project is in the <a href="https://github.com/BUmair/aws-projects/tree/main/project-02-serverless-api" target="_blank" rel="noopener">aws-projects repository</a>.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
     <section id="next">
       <h2>What's next</h2>
       <ul>
-        <li>Add a frontend that signs in with Cognito and calls the API.</li>
-        <li>Move the setup into infrastructure as code, so it's repeatable.</li>
+        <li>Build a frontend that signs in with Cognito and calls the API.</li>
+        <li>Define the setup in infrastructure as code so it can be rebuilt.</li>
         <li>Add a CloudWatch alarm on 5xx errors from the API.</li>
       </ul>
-      <p class="to-top"><a href="#top">Back to top ↑</a></p>
-    </section>
-
-    <section id="cleanup">
-      <h2>Cleanup</h2>
-      <p>Delete the HTTP API, the Lambda function and its role, the Cognito user pool, the DynamoDB table, and the log group. This project has been torn down.</p>
+      <p>The AWS resources for this project have been deleted to avoid charges.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
   </main>
