@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Documentation for the AWS Serverless Automation project: S3 event notifications invoking Lambda functions, with CloudWatch monitoring.">
+  <meta name="description" content="A serverless file-routing workflow: S3 event notifications trigger one of three Lambda functions by folder and file type.">
   <title>AWS Serverless Automation · Documentation</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,44 +19,48 @@
 
     <nav class="toc" aria-label="On this page">
       <a href="#overview">Overview</a>
-      <a href="#case-study">Case study</a>
+      <a href="#decisions">Decisions</a>
       <a href="#architecture">Architecture</a>
-      <a href="#buckets">1. Buckets</a>
-      <a href="#events">2. Event notifications</a>
-      <a href="#functions">3. Functions</a>
-      <a href="#permissions">4. Permissions</a>
-      <a href="#testing">5. Testing</a>
-      <a href="#monitoring">6. CloudWatch</a>
-      <a href="#troubleshoot">Troubleshooting</a>
-      <a href="#lessons">Lessons learned</a>
-      <a href="#cleanup">Cleanup</a>
+      <a href="#verification">Test cases</a>
+      <a href="#issues">Issues</a>
+      <a href="#reproduce">Reproduce it</a>
+      <a href="#next">What's next</a>
     </nav>
 
     <section id="overview">
-      <h2>Overview</h2>
-      <p>Uploads used to be handled by hand. This workflow handles them automatically and stays secure by default:</p>
-      <ul>
-        <li><strong>Three event notifications</strong>, each matching one kind of upload by its folder and file type.</li>
-        <li><strong>Three Lambda functions</strong>, each handling one kind of upload.</li>
-        <li><strong>No polling.</strong> S3 calls the function when a file arrives, which reduces idle compute cost.</li>
-        <li><strong>Least privilege.</strong> Each function can read only its own input and write only to the output folder.</li>
-        <li><strong>Monitoring.</strong> CloudWatch logs and alarms show each run and any failure.</li>
-      </ul>
+      <h2>What I built</h2>
+      <p>A routing workflow for uploads. A file dropped into an input bucket is sent to one of three Lambda functions, based on its folder and file type. The function writes its output to a separate bucket, and CloudWatch logs each run.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
-    <section id="case-study">
-      <h2>The problem this solves</h2>
-      <p>Small bookkeeping and admin teams often receive files in several formats every day, such as bank statements, accounting exports, and scanned receipts. Someone downloads each file, sorts it by type, and renames it before filing. This takes a lot of time, and files are sometimes misfiled.</p>
-      <h3>What this design does</h3>
+    <section id="decisions">
+      <h2>Decisions</h2>
       <ul>
-        <li>Routes each file to the function for its type automatically as soon as it arrives.</li>
-        <li>Writes each output to one folder that staff can review.</li>
-        <li>Charges only for processing that actually happens.</li>
+        <li><strong>Event notifications instead of polling.</strong> S3 calls the function when a file arrives, so no compute runs while the bucket is idle.</li>
+        <li><strong>Separate input and output buckets.</strong> Results never land in the bucket that triggers the functions, so they can't start another run.</li>
+        <li><strong>One notification per type.</strong> Each rule matches one folder and file type, so every upload triggers exactly one function.</li>
+        <li><strong>Least privilege.</strong> Each function's role can read only its own input files and write only to the output folder.</li>
       </ul>
+      <p>The current handler copies each file to the output bucket. It's the starting point, and the next step is to add the real processing for each file type. The same code runs in all three functions:</p>
+<pre><code>import json
+import urllib.parse
+import boto3
+
+s3 = boto3.client("s3")
+OUTPUT_BUCKET = "documents-processed-example"
+
+def lambda_handler(event, context):
+    processed = []
+    for record in event["Records"]:
+        bucket = record["s3"]["bucket"]["name"]
+        key = urllib.parse.unquote_plus(record["s3"]["object"]["key"])
+        body = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
+        output_key = "processed/" + key.split("/")[-1]
+        s3.put_object(Bucket=OUTPUT_BUCKET, Key=output_key, Body=body)
+        print(json.dumps({"input": key, "output": output_key, "bytes": len(body)}))
+        processed.append(output_key)
+    return {"processed": processed}</code></pre>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
     <section id="architecture">
       <h2>Architecture</h2>
       <p>Read the diagram in numbered order. An upload lands in the input bucket. S3 checks its folder and file type, then calls the matching function. The function writes the result to the output bucket, and CloudWatch records the run.</p>
@@ -108,164 +112,43 @@
       </figure>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
-    <details class="steps">
-      <summary>Build steps (expand)</summary>
-    <section id="buckets">
-      <h2>Step 1: Create the buckets</h2>
-      <ol class="steps">
-        <li><strong>Create the input bucket</strong> <code>documents-intake-example</code> in us-east-1, with the default settings (Block Public Access on).</li>
-        <li><strong>Create the output bucket</strong> <code>documents-processed-example</code> the same way.</li>
-      </ol>
-      <p class="callout">Keep the output bucket separate from the input bucket. If results were written back to the input bucket, they could trigger the functions again.</p>
-      <p class="to-top"><a href="#top">Back to top ↑</a></p>
-    </section>
-
-    <section id="events">
-      <h2>Step 2: Create three event notifications</h2>
-      <p>On the input bucket, go to Properties → Event notifications → Create event notification. Create three rules, each with the event type <em>All object create events</em>. Each rule matches a different folder and file type, so every upload triggers exactly one function:</p>
+    <section id="verification">
+      <h2>Test cases</h2>
+      <p>These are the five upload scenarios I set up. The expected result is what each test should show.</p>
       <table>
-        <thead><tr><th>Notification</th><th>Prefix (folder)</th><th>Suffix (file type)</th><th>Function</th></tr></thead>
+        <thead><tr><th>#</th><th>Upload</th><th>Expected result</th></tr></thead>
         <tbody>
-          <tr><td><code>csv-uploaded</code></td><td><code>uploads/</code></td><td><code>.csv</code></td><td><code>csv-processor</code></td></tr>
-          <tr><td><code>json-uploaded</code></td><td><code>uploads/</code></td><td><code>.json</code></td><td><code>json-processor</code></td></tr>
-          <tr><td><code>image-uploaded</code></td><td><code>incoming/</code></td><td><code>.png</code></td><td><code>image-processor</code></td></tr>
+          <tr><td>1</td><td>A <code>.csv</code> to <code>uploads/</code></td><td><code>csv-processor</code> runs once and writes one file to <code>processed/</code></td></tr>
+          <tr><td>2</td><td>A <code>.json</code> to <code>uploads/</code></td><td><code>json-processor</code> runs once</td></tr>
+          <tr><td>3</td><td>A <code>.png</code> to <code>incoming/</code></td><td><code>image-processor</code> runs once</td></tr>
+          <tr><td>4</td><td>A <code>.txt</code> file</td><td>No function runs</td></tr>
+          <tr><td>5</td><td>A file with spaces in its name</td><td>Processed correctly, because the key is URL-decoded</td></tr>
         </tbody>
       </table>
-      <p class="callout">Keep prefixes and suffixes unique. S3 rejects two notifications with the same prefix and suffix on the same event type.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
-    <section id="functions">
-      <h2>Step 3: Create the three functions</h2>
-      <ol class="steps">
-        <li><strong>Create <code>csv-processor</code>, <code>json-processor</code>, and <code>image-processor</code></strong> with the Python 3.12 runtime. Choose <em>Author from scratch</em> and let Lambda create an execution role for each. Step 4 narrows those roles.</li>
-        <li><strong>Add the handler code</strong> to each function. This version reads the uploaded file and writes a copy to the output bucket:</li>
-      </ol>
-<pre><code>import json
-import urllib.parse
-import boto3
-
-s3 = boto3.client("s3")
-OUTPUT_BUCKET = "documents-processed-example"
-
-def lambda_handler(event, context):
-    processed = []
-    for record in event["Records"]:
-        bucket = record["s3"]["bucket"]["name"]
-        key = urllib.parse.unquote_plus(record["s3"]["object"]["key"])
-
-        body = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
-
-        output_key = "processed/" + key.split("/")[-1]
-        s3.put_object(Bucket=OUTPUT_BUCKET, Key=output_key, Body=body)
-
-        print(json.dumps({"input": key, "output": output_key, "bytes": len(body)}))
-        processed.append(output_key)
-
-    return {"processed": processed}</code></pre>
-      <ol class="steps" start="3">
-        <li><strong>Deploy</strong> each function. Set a timeout and memory that suit the work, such as 30 seconds and 256 MB for small files. Raise them only if the logs show the function running out of time or memory.</li>
-      </ol>
-      <p class="callout">The three functions share this starter code. Replace the middle step in each one for its file type, such as parsing CSV rows, reading JSON fields, or resizing images.</p>
-      <p class="to-top"><a href="#top">Back to top ↑</a></p>
-    </section>
-
-    <section id="permissions">
-      <h2>Step 4: Set least-privilege permissions</h2>
-      <p>Each execution role allows only the actions its function uses. Here is <code>csv-processor</code>'s role. The other two follow the same pattern, changing the folder and file type:</p>
-<pre><code>{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "ReadOwnUploads",
-      "Effect": "Allow",
-      "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::documents-intake-example/uploads/*.csv"
-    },
-    {
-      "Sid": "WriteProcessedOnly",
-      "Effect": "Allow",
-      "Action": "s3:PutObject",
-      "Resource": "arn:aws:s3:::documents-processed-example/processed/*"
-    },
-    {
-      "Sid": "WriteLogs",
-      "Effect": "Allow",
-      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
-      "Resource": "*"
-    }
-  ]
-}</code></pre>
-      <p class="callout">Keep resource ARNs specific. Avoid <code>s3:*</code> and <code>"Resource": "*"</code> on any data action.</p>
-      <p class="to-top"><a href="#top">Back to top ↑</a></p>
-    </section>
-
-    <section id="testing">
-      <h2>Step 5: Test five upload scenarios</h2>
-      <table>
-        <thead><tr><th>#</th><th>Scenario</th><th>Expected result</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td>Upload a <code>.csv</code> to <code>uploads/</code></td><td><code>csv-processor</code> runs once and writes one file to <code>processed/</code></td></tr>
-          <tr><td>2</td><td>Upload a <code>.json</code> to <code>uploads/</code></td><td><code>json-processor</code> runs once</td></tr>
-          <tr><td>3</td><td>Upload a <code>.png</code> to <code>incoming/</code></td><td><code>image-processor</code> runs once</td></tr>
-          <tr><td>4</td><td>Upload a <code>.txt</code> file</td><td>No function runs, so nothing is charged</td></tr>
-          <tr><td>5</td><td>Upload a file with spaces in its name</td><td>Processed correctly, because the key is URL-decoded</td></tr>
-        </tbody>
-      </table>
-      <p>Run the uploads from your computer with the AWS CLI:</p>
-<pre><code>aws s3 cp sample.csv s3://documents-intake-example/uploads/ --region us-east-1
-aws s3 ls s3://documents-processed-example/processed/ --region us-east-1</code></pre>
-      <p class="to-top"><a href="#top">Back to top ↑</a></p>
-    </section>
-
-    <section id="monitoring">
-      <h2>Step 6: Monitor with CloudWatch</h2>
+    <section id="issues">
+      <h2>What broke and how I fixed it</h2>
       <ul>
-        <li>After each test, open the log group <code>/aws/lambda/csv-processor</code> (and the matching group for each function) and read the newest log stream.</li>
-        <li>Create a CloudWatch alarm on each function's <code>Errors</code> metric, so failures show up without checking logs by hand.</li>
-        <li>Use the <code>Invocations</code> metric to confirm each function runs only when its file type arrives.</li>
+        <li><strong>A function didn't run for an uppercase file extension.</strong> The suffix match is case-sensitive, so <code>.CSV</code> doesn't match <code>.csv</code>. Fix: upload lowercase extensions, or add a rule for each capitalization.</li>
+        <li><strong>A function ran over and over.</strong> Its output was written to the folder that triggers it. Fix: write results only to the output bucket.</li>
+        <li><strong>S3 refused to save a new event rule.</strong> Two rules had the same prefix and suffix. Fix: give each rule a unique folder and file type.</li>
+        <li><strong>The logs showed AccessDenied.</strong> The role's policy named a different folder or bucket than the code used. Fix: I compared the names in the policy with the names in the code.</li>
+        <li><strong>Large files stopped partway through.</strong> The timeout was too short. Fix: I raised the timeout.</li>
       </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-    </details>
-
-    <section id="troubleshoot">
-      <h2>Troubleshooting</h2>
-      <table>
-        <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
-        <tbody>
-          <tr><td>Function never runs</td><td>The folder or file type doesn't match the notification</td><td>Compare the key with each notification's prefix and suffix</td></tr>
-          <tr><td><code>AccessDenied</code> in logs</td><td>The execution role is missing a permission</td><td>Check the role's policy against the bucket and folder</td></tr>
-          <tr><td>Function runs repeatedly</td><td>Output is written to the input folder</td><td>Write only to the output bucket's <code>processed/</code> folder</td></tr>
-          <tr><td>Timeout errors</td><td>The file is larger than the timeout allows</td><td>Raise the timeout, or split the file</td></tr>
-        </tbody>
-      </table>
+    <section id="reproduce">
+      <h2>Reproduce it</h2>
+      <p>The source for this project is in the <a href="https://github.com/BUmair/aws-projects" target="_blank" rel="noopener">aws-projects repository</a>.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
-
-    <section id="lessons">
-      <h2>Lessons learned</h2>
-      <p>Event-driven pipelines like this one tend to fail in the same few ways. Here is what to look for, why it happens, and how to fix it.</p>
-      <table>
-        <thead><tr><th>What goes wrong</th><th>Why it happens</th><th>How to fix it</th></tr></thead>
-        <tbody>
-          <tr><td>A function doesn't run for a <code>.CSV</code> file</td><td>The file extension must match exactly, including capital letters</td><td>Upload files with lowercase extensions, or add a separate rule for each capitalization.</td></tr>
-          <tr><td>A function runs over and over</td><td>The function writes its output back into the folder that triggers it, which starts a new run each time</td><td>Write results only to the output bucket. Make sure no rule's folder matches where the output is written.</td></tr>
-          <tr><td>S3 refuses to save a new event rule</td><td>Two rules use the same folder and file type, so S3 can't tell which one should run</td><td>Change the folder or file type so each rule is unique.</td></tr>
-          <tr><td>The logs show <code>AccessDenied</code></td><td>The function's permissions point to a different folder or bucket name than the one it's using</td><td>Compare the bucket and folder names in the role's policy with the names in your code, letter by letter.</td></tr>
-          <tr><td>Large files stop partway through</td><td>The function's time limit is too short for the file</td><td>Raise the timeout. Giving the function more memory also gives it more processing power, which can speed it up.</td></tr>
-          <tr><td>The same file gets processed twice</td><td>S3 can send the same event more than once</td><td>Write output under a fixed name, so a second run replaces the first result instead of creating a duplicate.</td></tr>
-          <tr><td>No logs appear after an upload</td><td>The function hasn't run yet, or its role is missing permission to write logs</td><td>Upload a test file, then check that the role can create log groups and write log events.</td></tr>
-          <tr><td>A test upload does nothing right after setup</td><td>S3 can take a short time to start using a new event rule</td><td>Wait a minute and upload again. Confirm the rule appears under the bucket's event notifications.</td></tr>
-        </tbody>
-      </table>
-      <p class="to-top"><a href="#top">Back to top ↑</a></p>
-    </section>
-
-    <section id="cleanup">
-      <h2>Cleanup</h2>
-      <p>Remove the three event notifications, delete the three functions and their log groups, then empty and delete both buckets and the execution roles.</p>
+    <section id="next">
+      <h2>What's next</h2>
+      <ul>
+        <li>Replace the copy step with real processing for each file type, such as parsing CSV rows, reading JSON fields, or resizing images.</li>
+        <li>Add a CloudWatch alarm on each function's Errors metric.</li>
+      </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
   </main>
