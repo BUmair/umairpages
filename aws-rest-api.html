@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Documentation for a serverless REST API using API Gateway, Lambda, DynamoDB, and a Cognito JWT authorizer.">
+  <title>Serverless REST API · Documentation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+  <main class="doc">
+    <p class="back"><a href="index.html#projects">← Back to portfolio</a></p>
+
+    <header class="doc-head">
+      <p class="eyebrow">Project documentation</p>
+      <h1>Serverless REST API</h1>
+      <p class="lede">A REST API for a simple items list. API Gateway receives requests, a Lambda function runs the logic, and DynamoDB stores the data. Cognito protects the write routes with JWT tokens.</p>
+    </header>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#routes">Routes</a>
+      <a href="#build">Build steps</a>
+      <a href="#verify">Verification</a>
+      <a href="#issues">Issues I hit</a>
+      <a href="#next">What's next</a>
+      <a href="#cleanup">Cleanup</a>
+    </nav>
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>Reads are public, and writes need a signed-in user:</p>
+      <ul>
+        <li><strong>Public reads.</strong> Anyone can list items or get one by ID.</li>
+        <li><strong>Protected writes.</strong> Creating and deleting items require a Cognito ID token. Without one, the API returns <code>401</code>.</li>
+        <li><strong>Least privilege.</strong> The Lambda's role can use only the four DynamoDB actions it needs, on the one table.</li>
+        <li><strong>Logging.</strong> Each request writes a line to CloudWatch Logs.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <p>The client signs in with Cognito to get a token. API Gateway checks the token on the write routes, then invokes the Lambda function.</p>
+      <figure class="diagram">
+        <img src="images/rest-api-architecture.svg" width="900" height="420" alt="Client signs in to Cognito, sends requests to API Gateway, which checks the JWT and invokes Lambda. Lambda reads and writes DynamoDB and logs to CloudWatch.">
+        <figcaption><strong>1</strong> Sign in to Cognito and get a token. <strong>2</strong> Send the request to API Gateway, which checks the token. <strong>3</strong> API Gateway invokes Lambda. <strong>4</strong> Lambda reads and writes DynamoDB. <strong>5</strong> Lambda logs the request to CloudWatch.</figcaption>
+      </figure>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="routes">
+      <h2>Routes</h2>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>GET</td><td><code>/items</code></td><td>Public</td><td>List all items</td></tr>
+          <tr><td>GET</td><td><code>/items/{id}</code></td><td>Public</td><td>Get one item</td></tr>
+          <tr><td>POST</td><td><code>/items</code></td><td>JWT</td><td>Create an item</td></tr>
+          <tr><td>DELETE</td><td><code>/items/{id}</code></td><td>JWT</td><td>Delete an item</td></tr>
+        </tbody>
+      </table>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="build">
+      <h2>Build steps</h2>
+      <ol class="steps">
+        <li><strong>DynamoDB:</strong> create table <code>items</code> with partition key <code>id</code> (String), on-demand capacity.</li>
+        <li><strong>Cognito:</strong> create a user pool with email sign-in and a single-page app client with no secret. Enable the username-and-password flow.</li>
+        <li><strong>Lambda:</strong> create <code>items-api</code> on Python 3.12. Set the handler to <code>lambda_function.handler</code> and add the environment variable <code>TABLE_NAME=items</code>.</li>
+        <li><strong>Permissions:</strong> add an inline policy that allows <code>Scan</code>, <code>GetItem</code>, <code>PutItem</code>, and <code>DeleteItem</code> on the table's ARN only.</li>
+        <li><strong>API Gateway:</strong> create an HTTP API, add the four routes, and attach one shared Lambda integration to all of them.</li>
+        <li><strong>Authorizer:</strong> create a JWT authorizer with the user pool's issuer URL and the app client ID as the audience. Attach it to POST and DELETE only.</li>
+        <li><strong>Deploy:</strong> create the <code>$default</code> stage with auto-deploy on.</li>
+      </ol>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="verify">
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Check</th><th>Expected</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>GET <code>/items</code></td><td>200, <code>[]</code></td><td>Verified</td></tr>
+          <tr><td>POST and DELETE without a token</td><td>401</td><td>Verified</td></tr>
+          <tr><td>POST with a Cognito ID token</td><td>201, item returned</td><td>Verified</td></tr>
+          <tr><td>GET after POST</td><td>Item appears in the list</td><td>Verified</td></tr>
+          <tr><td>DELETE with a token</td><td>204, then GET returns <code>[]</code></td><td>Verified</td></tr>
+        </tbody>
+      </table>
+      <p class="callout">Browsers can't send a POST or DELETE directly, so the authenticated checks ran from the command line with <code>curl</code>. The token came from Cognito's sign-in call.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="issues">
+      <h2>Issues I hit</h2>
+      <table>
+        <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td><code>Runtime.HandlerNotFound</code> on every request</td><td>The console's default handler name didn't match the code</td><td>Set the handler to <code>lambda_function.handler</code>.</td></tr>
+          <tr><td><code>GET /items</code> returned 404 after cleanup</td><td>Removing the extra integrations also removed the route's integration</td><td>Recreated the route and attached the shared integration.</td></tr>
+          <tr><td>Integration couldn't be deleted</td><td>A route still referenced it</td><td>Point each route at the shared integration first, then delete the extra ones.</td></tr>
+          <tr><td>Sign-in failed with a temporary password</td><td>Console-created users must change their password at first sign-in</td><td>Answer the <code>NEW_PASSWORD_REQUIRED</code> challenge with <code>RespondToAuthChallenge</code>.</td></tr>
+        </tbody>
+      </table>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="next">
+      <h2>What's next</h2>
+      <ul>
+        <li>Add a frontend that signs in with Cognito and calls the API.</li>
+        <li>Move the setup into infrastructure as code, so it's repeatable.</li>
+        <li>Add a CloudWatch alarm on 5xx errors from the API.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="cleanup">
+      <h2>Cleanup</h2>
+      <p>Delete the HTTP API, the Lambda function and its role, the Cognito user pool, the DynamoDB table, and the log group. This project has been torn down.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="year"></span> Umair Bhalli</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

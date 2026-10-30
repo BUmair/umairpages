@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Documentation for a static website on a private S3 bucket, served through CloudFront with Origin Access Control.">
+  <title>Static Site on S3 + CloudFront · Documentation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+  <main class="doc">
+    <p class="back"><a href="index.html#projects">← Back to portfolio</a></p>
+
+    <header class="doc-head">
+      <p class="eyebrow">Project documentation</p>
+      <h1>Static Site on S3 + CloudFront</h1>
+      <p class="lede">A static website in a private S3 bucket, served worldwide over HTTPS through CloudFront. The bucket is not public: only the CloudFront distribution can read from it.</p>
+    </header>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#build">Build steps</a>
+      <a href="#verify">Verification</a>
+      <a href="#issues">Issues I hit</a>
+      <a href="#next">What's next</a>
+      <a href="#cleanup">Cleanup</a>
+    </nav>
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>Public websites often end up with buckets that are open to the internet. This design keeps the bucket private and puts CloudFront in front of it:</p>
+      <ul>
+        <li><strong>Private bucket.</strong> Block Public Access is on for all four settings, and versioning is enabled.</li>
+        <li><strong>Origin Access Control (OAC).</strong> CloudFront signs each request to S3, so the bucket doesn't have to be public.</li>
+        <li><strong>Scoped bucket policy.</strong> The policy allows only <code>s3:GetObject</code>, only for the CloudFront service, and only for this one distribution.</li>
+        <li><strong>HTTPS.</strong> Plain HTTP requests are redirected to HTTPS.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <p>A visitor's request goes to CloudFront, which fetches the file from S3 with a signed request. A direct request to the S3 URL is denied.</p>
+      <figure class="diagram">
+        <img src="images/static-site-architecture.svg" width="900" height="300" alt="Browser sends a request to CloudFront with OAC, which fetches the file from the private S3 bucket. A direct S3 URL request is denied with AccessDenied.">
+        <figcaption><strong>1</strong> The browser requests the site from CloudFront. <strong>2</strong> CloudFront fetches the file from S3 using OAC. <strong>3</strong> A direct request to the S3 URL is denied.</figcaption>
+      </figure>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="build">
+      <h2>Build steps</h2>
+      <ol class="steps">
+        <li><strong>Create a private bucket</strong> in us-east-1. Keep Block Public Access on, and enable versioning.</li>
+        <li><strong>Upload <code>index.html</code></strong> to the bucket root.</li>
+        <li><strong>Create a CloudFront distribution</strong> with the S3 REST endpoint as the origin (not the website endpoint). Attach a new Origin Access Control, redirect HTTP to HTTPS, and set the <strong>default root object</strong> to <code>index.html</code>.</li>
+        <li><strong>Apply the bucket policy</strong> that CloudFront generates. It scopes access to this distribution's ARN.</li>
+      </ol>
+      <p class="callout">Setting the default root object matters. Without it, a request for <code>/</code> asks S3 for an empty key, which returns <code>AccessDenied</code> instead of a page.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="verify">
+      <h2>Verification</h2>
+      <table>
+        <thead><tr><th>Request</th><th>Expected</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>CloudFront URL, <code>/</code></td><td>200, page renders</td><td>Page renders</td></tr>
+          <tr><td>Direct S3 object URL</td><td>AccessDenied</td><td>AccessDenied</td></tr>
+        </tbody>
+      </table>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="issues">
+      <h2>Issues I hit</h2>
+      <table>
+        <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td>CloudFront returned <code>AccessDenied</code> even though the policy and OAC were correct</td><td>The distribution's default root object was blank, so <code>/</code> requested an empty key. The policy grants only <code>s3:GetObject</code>, so S3 denied a key that doesn't exist.</td><td>Set the default root object to <code>index.html</code>.</td></tr>
+        </tbody>
+      </table>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="next">
+      <h2>What's next</h2>
+      <ul>
+        <li>Add a custom domain with ACM and Route 53.</li>
+        <li>Put the bucket and distribution in infrastructure as code so the setup is reproducible.</li>
+        <li>Add CloudFront logs or a CloudWatch alarm on 4xx and 5xx rates.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+
+    <section id="cleanup">
+      <h2>Cleanup</h2>
+      <p>Disable and delete the CloudFront distribution, empty the bucket including all versions, delete the bucket, then delete the Origin Access Control. This project has been torn down.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="year"></span> Umair Bhalli</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
