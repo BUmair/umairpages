@@ -52,15 +52,12 @@
 
     <section id="routes">
       <h2>Routes</h2>
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr></thead>
-        <tbody>
-          <tr><td>GET</td><td><code>/items</code></td><td>Public</td><td>List all items</td></tr>
-          <tr><td>GET</td><td><code>/items/{id}</code></td><td>Public</td><td>Get one item</td></tr>
-          <tr><td>POST</td><td><code>/items</code></td><td>JWT</td><td>Create an item</td></tr>
-          <tr><td>DELETE</td><td><code>/items/{id}</code></td><td>JWT</td><td>Delete an item</td></tr>
-        </tbody>
-      </table>
+      <ul class="checks">
+        <li><strong>GET</strong> — <code>/items</code> — Public — List all items</li>
+        <li><strong>GET</strong> — <code>/items/{id}</code> — Public — Get one item</li>
+        <li><strong>POST</strong> — <code>/items</code> — JWT — Create an item</li>
+        <li><strong>DELETE</strong> — <code>/items/{id}</code> — JWT — Delete an item</li>
+      </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
@@ -80,31 +77,25 @@
 
     <section id="verify">
       <h2>Verification</h2>
-      <table>
-        <thead><tr><th>Check</th><th>Expected</th><th>Result</th></tr></thead>
-        <tbody>
-          <tr><td>GET <code>/items</code></td><td>200, <code>[]</code></td><td>Verified</td></tr>
-          <tr><td>POST and DELETE without a token</td><td>401</td><td>Verified</td></tr>
-          <tr><td>POST with a Cognito ID token</td><td>201, item returned</td><td>Verified</td></tr>
-          <tr><td>GET after POST</td><td>Item appears in the list</td><td>Verified</td></tr>
-          <tr><td>DELETE with a token</td><td>204, then GET returns <code>[]</code></td><td>Verified</td></tr>
-        </tbody>
-      </table>
+      <ul class="checks">
+        <li><strong>GET <code>/items</code></strong> — 200, <code>[]</code> — Verified</li>
+        <li><strong>POST and DELETE without a token</strong> — 401 — Verified</li>
+        <li><strong>POST with a Cognito ID token</strong> — 201, item returned — Verified</li>
+        <li><strong>GET after POST</strong> — Item appears in the list — Verified</li>
+        <li><strong>DELETE with a token</strong> — 204, then GET returns <code>[]</code> — Verified</li>
+      </ul>
       <p class="callout">Browsers can't send a POST or DELETE directly, so the authenticated checks ran from the command line with <code>curl</code>. The token came from Cognito's sign-in call.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
     <section id="issues">
       <h2>Issues I hit</h2>
-      <table>
-        <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
-        <tbody>
-          <tr><td><code>Runtime.HandlerNotFound</code> on every request</td><td>The console's default handler name didn't match the code</td><td>Set the handler to <code>lambda_function.handler</code>.</td></tr>
-          <tr><td><code>GET /items</code> returned 404 after cleanup</td><td>Removing the extra integrations also removed the route's integration</td><td>Recreated the route and attached the shared integration.</td></tr>
-          <tr><td>Integration couldn't be deleted</td><td>A route still referenced it</td><td>Point each route at the shared integration first, then delete the extra ones.</td></tr>
-          <tr><td>Sign-in failed with a temporary password</td><td>Console-created users must change their password at first sign-in</td><td>Answer the <code>NEW_PASSWORD_REQUIRED</code> challenge with <code>RespondToAuthChallenge</code>.</td></tr>
-        </tbody>
-      </table>
+      <ul class="checks">
+        <li><strong><code>Runtime.HandlerNotFound</code> on every request</strong> — The console's default handler name didn't match the code — Set the handler to <code>lambda_function.handler</code>.</li>
+        <li><strong><code>GET /items</code> returned 404 after cleanup</strong> — Removing the extra integrations also removed the route's integration — Recreated the route and attached the shared integration.</li>
+        <li><strong>Integration couldn't be deleted</strong> — A route still referenced it — Point each route at the shared integration first, then delete the extra ones.</li>
+        <li><strong>Sign-in failed with a temporary password</strong> — Console-created users must change their password at first sign-in — Answer the <code>NEW_PASSWORD_REQUIRED</code> challenge with <code>RespondToAuthChallenge</code>.</li>
+      </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 

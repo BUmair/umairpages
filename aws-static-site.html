@@ -63,24 +63,18 @@
 
     <section id="verify">
       <h2>Verification</h2>
-      <table>
-        <thead><tr><th>Request</th><th>Expected</th><th>Result</th></tr></thead>
-        <tbody>
-          <tr><td>CloudFront URL, <code>/</code></td><td>200, page renders</td><td>Page renders</td></tr>
-          <tr><td>Direct S3 object URL</td><td>AccessDenied</td><td>AccessDenied</td></tr>
-        </tbody>
-      </table>
+      <ul class="checks">
+        <li><strong>CloudFront URL, <code>/</code></strong> — 200, page renders — Page renders</li>
+        <li><strong>Direct S3 object URL</strong> — AccessDenied — AccessDenied</li>
+      </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
     <section id="issues">
       <h2>Issues I hit</h2>
-      <table>
-        <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
-        <tbody>
-          <tr><td>CloudFront returned <code>AccessDenied</code> even though the policy and OAC were correct</td><td>The distribution's default root object was blank, so <code>/</code> requested an empty key. The policy grants only <code>s3:GetObject</code>, so S3 denied a key that doesn't exist.</td><td>Set the default root object to <code>index.html</code>.</td></tr>
-        </tbody>
-      </table>
+      <ul class="checks">
+        <li><strong>CloudFront returned <code>AccessDenied</code> even though the policy and OAC were correct</strong> — The distribution's default root object was blank, so <code>/</code> requested an empty key. The policy grants only <code>s3:GetObject</code>, so S3 denied a key that doesn't exist. — Set the default root object to <code>index.html</code>.</li>
+      </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
