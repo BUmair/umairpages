@@ -14,7 +14,7 @@
     <header class="doc-head">
       <p class="eyebrow">Project documentation</p>
       <h1>AWS Cloud Infrastructure</h1>
-      <p class="lede">A small, segmented network on AWS in us-east-1 (North America East). Two public subnets in separate Availability Zones, each with its own route table and a web server. Access is granted by least privilege, and a static website is hosted on S3 with its public access reviewed.</p>
+      <p class="lede">Outcome: a segmented AWS network where access to each server is limited to the ports and identities it needs. Two public subnets in separate Availability Zones, each with its own route table and a web server, plus a static website on S3 with its public access reviewed.</p>
     </header>
 
     <nav class="toc" aria-label="On this page">
@@ -108,6 +108,8 @@
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
+    <details class="steps">
+      <summary>Build steps (expand)</summary>
     <section id="network">
       <h2>Step 1: Build the network</h2>
       <ol class="steps">
@@ -225,7 +227,7 @@ df -h</code></pre>
       <h2>Step 6: Host the website on S3</h2>
       <p>The site is hosted from a bucket, not from the servers, so it stays up even if a server is stopped. Public access is limited to reading the site files:</p>
       <ol class="steps">
-        <li><strong>Create the bucket</strong> <code>webapp-site-[yourname]</code> in us-east-1. Bucket names are unique worldwide.</li>
+        <li><strong>Create the bucket</strong> <code>webapp-site-example</code> in us-east-1. Bucket names are unique worldwide.</li>
         <li><strong>Upload</strong> <code>index.html</code> and its images.</li>
         <li><strong>Enable static website hosting</strong> in Properties, with <code>index.html</code> as the index document.</li>
         <li><strong>Limit public access.</strong> Keep all four Block Public Access settings on, except <em>Block public access to buckets and objects granted through new public bucket policies</em>. Then add a policy that allows only reading the site's files:</li>
@@ -237,13 +239,14 @@ df -h</code></pre>
     "Effect": "Allow",
     "Principal": "*",
     "Action": "s3:GetObject",
-    "Resource": "arn:aws:s3:::webapp-site-yourname/*"
+    "Resource": "arn:aws:s3:::webapp-site-example/*"
   }]
 }</code></pre>
       <p>This keeps the bucket private by default and opens only one action, <code>GetObject</code>, for the site's files. Visitors can't list, write, or delete anything.</p>
       <p class="callout">Check the settings after every change. If a new policy grants more than <code>s3:GetObject</code>, remove it.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
+    </details>
 
     <section id="verify">
       <h2>Verify</h2>

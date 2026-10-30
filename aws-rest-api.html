@@ -14,7 +14,7 @@
     <header class="doc-head">
       <p class="eyebrow">Project documentation</p>
       <h1>Serverless REST API</h1>
-      <p class="lede">A REST API for a simple items list. API Gateway receives requests, a Lambda function runs the logic, and DynamoDB stores the data. Cognito protects the write routes with JWT tokens.</p>
+      <p class="lede">Outcome: a REST API where anyone can read items, and only signed-in users can create or delete them. API Gateway routes requests to Lambda, DynamoDB stores the data, and Cognito issues the JWT tokens.</p>
     </header>
 
     <nav class="toc" aria-label="On this page">
@@ -61,6 +61,8 @@
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
+    <details class="steps">
+      <summary>Build steps (expand)</summary>
     <section id="build">
       <h2>Build steps</h2>
       <ol class="steps">
@@ -74,6 +76,7 @@
       </ol>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
+    </details>
 
     <section id="verify">
       <h2>Verification</h2>

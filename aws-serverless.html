@@ -14,7 +14,7 @@
     <header class="doc-head">
       <p class="eyebrow">Project documentation</p>
       <h1>AWS Serverless Automation</h1>
-      <p class="lede">A file-routing workflow in us-east-1 (North America East). Uploading a file to S3 triggers a Lambda function directly, so no server waits for files and no compute runs while the bucket is idle. CloudWatch records every run.</p>
+      <p class="lede">Outcome: uploads are routed to the right function automatically, with no polling and no compute running while the bucket is idle. CloudWatch logs every run.</p>
     </header>
 
     <nav class="toc" aria-label="On this page">
@@ -109,11 +109,13 @@
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
+    <details class="steps">
+      <summary>Build steps (expand)</summary>
     <section id="buckets">
       <h2>Step 1: Create the buckets</h2>
       <ol class="steps">
-        <li><strong>Create the input bucket</strong> <code>documents-intake-[yourname]</code> in us-east-1, with the default settings (Block Public Access on).</li>
-        <li><strong>Create the output bucket</strong> <code>documents-processed-[yourname]</code> the same way.</li>
+        <li><strong>Create the input bucket</strong> <code>documents-intake-example</code> in us-east-1, with the default settings (Block Public Access on).</li>
+        <li><strong>Create the output bucket</strong> <code>documents-processed-example</code> the same way.</li>
       </ol>
       <p class="callout">Keep the output bucket separate from the input bucket. If results were written back to the input bucket, they could trigger the functions again.</p>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
@@ -145,7 +147,7 @@ import urllib.parse
 import boto3
 
 s3 = boto3.client("s3")
-OUTPUT_BUCKET = "documents-processed-yourname"
+OUTPUT_BUCKET = "documents-processed-example"
 
 def lambda_handler(event, context):
     processed = []
@@ -179,13 +181,13 @@ def lambda_handler(event, context):
       "Sid": "ReadOwnUploads",
       "Effect": "Allow",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::documents-intake-yourname/uploads/*.csv"
+      "Resource": "arn:aws:s3:::documents-intake-example/uploads/*.csv"
     },
     {
       "Sid": "WriteProcessedOnly",
       "Effect": "Allow",
       "Action": "s3:PutObject",
-      "Resource": "arn:aws:s3:::documents-processed-yourname/processed/*"
+      "Resource": "arn:aws:s3:::documents-processed-example/processed/*"
     },
     {
       "Sid": "WriteLogs",
@@ -212,8 +214,8 @@ def lambda_handler(event, context):
         </tbody>
       </table>
       <p>Run the uploads from your computer with the AWS CLI:</p>
-<pre><code>aws s3 cp sample.csv s3://documents-intake-yourname/uploads/ --region us-east-1
-aws s3 ls s3://documents-processed-yourname/processed/ --region us-east-1</code></pre>
+<pre><code>aws s3 cp sample.csv s3://documents-intake-example/uploads/ --region us-east-1
+aws s3 ls s3://documents-processed-example/processed/ --region us-east-1</code></pre>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
 
@@ -226,6 +228,7 @@ aws s3 ls s3://documents-processed-yourname/processed/ --region us-east-1</code>
       </ul>
       <p class="to-top"><a href="#top">Back to top ↑</a></p>
     </section>
+    </details>
 
     <section id="troubleshoot">
       <h2>Troubleshooting</h2>
