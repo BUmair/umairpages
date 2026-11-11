@@ -495,3 +495,19 @@ main section { font-size: 14px; line-height: 1.5; }
 .pair { font-size: 14px; line-height: 1.5; }
 #experience .role h3, .pair .card h3 { font-size: 1rem; }
 #experience .meta, .pair .meta { font-size: 0.85rem; }
+
+/* Projects, option 2: three columns, left-aligned, shorter cards */
+#projects .card { text-align: left; padding: 16px 18px; }
+#projects .role { display: block; text-align: left; }
+#projects .role .meta { justify-content: flex-start; }
+#projects .card .meta { text-align: left; }
+#projects .award { text-align: left; }
+#projects .card ul { list-style: disc; padding-left: 16px; text-align: left; display: block; margin: 8px 0 0; }
+#projects .card li { text-align: left; padding-left: 0; }
+#projects .card li::before { content: none; }
+#projects .card li + li { margin-top: 4px; }
+#projects .card .shot { margin: 10px 0; }
+#projects .card .shot img { height: 140px; object-fit: cover; object-position: top; }
+#projects .tags { justify-content: flex-start; margin-top: 10px; }
+#projects .card-links { justify-content: flex-start; margin-top: 12px; }
+#projects .card .doc-link { margin: 12px 0 0; display: inline-block; }
