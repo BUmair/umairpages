@@ -524,3 +524,8 @@ main section { font-size: 14px; line-height: 1.5; }
 @media (max-width: 760px) {
   .skill-groups { grid-template-columns: 1fr; }
 }
+
+/* Phones: drop the separator dot before a wrapped date line */
+@media (max-width: 760px) {
+  #experience .role .meta span + span::before { content: none; }
+}
