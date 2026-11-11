@@ -34,6 +34,7 @@
 
     <section id="experience">
       <h2>Experience</h2>
+      <div class="pair-col">
       <article class="card">
         <div class="role"><h3>IT Support Technician Intern</h3>
           <p class="meta"><span>Prince William County Public Schools</span><span>July 2025 – August 2025</span></p>
@@ -48,6 +49,18 @@
         </ul>
       </article>
       <article class="card">
+        <div class="role"><h3>Assistant</h3>
+          <p class="meta"><span>Kumon North America, Inc.</span><span>December 2022 – December 2023</span></p>
+        </div>
+        <ul>
+          <li>Graded math and English assignments and tracked weekly progress for 50+ students using Microsoft Excel.</li>
+          <li>Explained new topics on the spot to build student understanding.</li>
+          <li>Helped instructors with classroom management and operations to keep the environment consistent and organized.</li>
+        </ul>
+      </article>
+      </div>
+      <div class="pair-col">
+      <article class="card">
         <div class="role"><h3>Specialty Supervisor</h3>
           <p class="meta"><span>The Home Depot</span><span>April 2025 – June 2026</span></p>
         </div>
@@ -56,16 +69,6 @@
           <li>Gathered customer requirements and coordinated cross-department delivery for multiple projects on schedule.</li>
           <li>Trained and mentored 8–10 associates on task execution and customer communication.</li>
           <li>Resolved customer and operational issues by evaluating options and coordinating timely solutions.</li>
-        </ul>
-      </article>
-      <article class="card">
-        <div class="role"><h3>Assistant</h3>
-          <p class="meta"><span>Kumon North America, Inc.</span><span>December 2022 – December 2023</span></p>
-        </div>
-        <ul>
-          <li>Graded math and English assignments and tracked weekly progress for 50+ students using Microsoft Excel.</li>
-          <li>Explained new topics on the spot to build student understanding.</li>
-          <li>Helped instructors with classroom management and operations to keep the environment consistent and organized.</li>
         </ul>
       </article>
       <article class="card">
@@ -78,11 +81,13 @@
           <li>Kept version control across creative projects using cloud storage.</li>
         </ul>
       </article>
+      </div>
     </section>
 
     <section id="projects">
       <h2>Projects</h2>
       <div class="grid">
+      <div class="col">
         <article class="card">
           <div class="role"><h3>Clear Home</h3>
           <p class="meta"><span>GDG Build with AI x Hacktoberfest 2026</span><span>Team project with Pierce, Phone, and Ryan</span></p>
@@ -100,6 +105,19 @@
           <div class="card-links"><a href="https://clearhome.live" target="_blank" rel="noopener">Live site →</a><a href="https://github.com/phonehseng/clearhome" target="_blank" rel="noopener">Source code →</a><a href="clearhome-contributions.html">What I did →</a></div>
         </article>
         <article class="card">
+          <h3>Serverless REST API</h3>
+          <ul>
+            <li>Built a REST API with API Gateway, Lambda, and DynamoDB, with public reads and JWT-protected writes.</li>
+            <li>Protected POST and DELETE with a Cognito authorizer, and verified 401 without a token and 201 and 204 with one.</li>
+            <li>Diagnosed a Lambda handler mismatch from CloudWatch logs and fixed it.</li>
+            <li>Scoped the Lambda role to four DynamoDB actions on a single table.</li>
+          </ul>
+          <div class="tags"><span>API Gateway</span><span>Lambda</span><span>DynamoDB</span><span>Cognito</span></div>
+          <div class="card-links"><a href="aws-rest-api.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-02-serverless-api" target="_blank" rel="noopener">Source →</a></div>
+        </article>
+      </div>
+      <div class="col">
+        <article class="card">
           <div class="role"><h3>Neon Tower Defense</h3>
           <p class="meta"><span>Personal project</span><span>2026</span></p>
         </div>
@@ -115,7 +133,20 @@
           <div class="card-links"><a href="https://bumair.github.io/neon-tower-defense/" target="_blank" rel="noopener">Play it →</a><a href="https://github.com/BUmair/neon-tower-defense" target="_blank" rel="noopener">Source code →</a></div>
         </article>
         <article class="card">
-          <div class="role"><h3>AWS Cloud Infrastructure</h3>
+          <h3>Static Site on S3 + CloudFront</h3>
+          <ul>
+            <li>Hosted a website in a private S3 bucket, with Block Public Access on and no public read access.</li>
+            <li>Served it over HTTPS through CloudFront using Origin Access Control, scoped to one distribution.</li>
+            <li>Verified that the direct S3 URL returns AccessDenied while the CloudFront URL serves the page.</li>
+            <li>Traced an AccessDenied error to a blank default root object and fixed it.</li>
+          </ul>
+          <div class="tags"><span>S3</span><span>CloudFront</span><span>OAC</span><span>IAM</span></div>
+          <div class="card-links"><a href="aws-static-site.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-01-static-site-s3-cloudfront" target="_blank" rel="noopener">Source →</a></div>
+        </article>
+      </div>
+      <div class="col">
+        <article class="card">
+          <div class="role"><h3>AWS Cloud Infrastructure</h3></div>
           <ul>
             <li>Designed a VPC with two public subnets, two route tables, and three security groups to segment network access.</li>
             <li>Applied IAM least-privilege access across users, groups, roles, and policies.</li>
@@ -137,37 +168,16 @@
           <div class="tags"><span>Lambda</span><span>S3</span><span>CloudWatch</span></div>
           <a class="doc-link" href="aws-serverless.html">Documentation →</a>
         </article>
-        <article class="card">
-          <h3>Static Site on S3 + CloudFront</h3>
-          <ul>
-            <li>Hosted a website in a private S3 bucket, with Block Public Access on and no public read access.</li>
-            <li>Served it over HTTPS through CloudFront using Origin Access Control, scoped to one distribution.</li>
-            <li>Verified that the direct S3 URL returns AccessDenied while the CloudFront URL serves the page.</li>
-            <li>Traced an AccessDenied error to a blank default root object and fixed it.</li>
-          </ul>
-          <div class="tags"><span>S3</span><span>CloudFront</span><span>OAC</span><span>IAM</span></div>
-          <div class="card-links"><a href="aws-static-site.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-01-static-site-s3-cloudfront" target="_blank" rel="noopener">Source →</a></div>
-        </article>
-        <article class="card">
-          <h3>Serverless REST API</h3>
-          <ul>
-            <li>Built a REST API with API Gateway, Lambda, and DynamoDB, with public reads and JWT-protected writes.</li>
-            <li>Protected POST and DELETE with a Cognito authorizer, and verified 401 without a token and 201 and 204 with one.</li>
-            <li>Diagnosed a Lambda handler mismatch from CloudWatch logs and fixed it.</li>
-            <li>Scoped the Lambda role to four DynamoDB actions on a single table.</li>
-          </ul>
-          <div class="tags"><span>API Gateway</span><span>Lambda</span><span>DynamoDB</span><span>Cognito</span></div>
-          <div class="card-links"><a href="aws-rest-api.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-02-serverless-api" target="_blank" rel="noopener">Source →</a></div>
-        </article>
       </div>
+    </div>
     </section>
 
+    <div class="pair">
     <section>
       <h2>Leadership</h2>
       <article class="card">
         <h3>Instructor, Coach &amp; Student · Pencak Silat Indonesian Martial Arts</h3>
           <p class="meta"><span>August 2018 – Present</span></p>
-        </div>
         <ul>
           <li>Coach 15–20 students across three weekly classes, teaching technical skills in plain language.</li>
           <li>Developed seven students who earned competition placements, including five first-place finishes.</li>
@@ -175,6 +185,15 @@
         </ul>
       </article>
     </section>
+    <section>
+      <h2>Certifications</h2>
+      <ul class="cert-list">
+        <li>AWS Certified Solutions Architect – Associate</li>
+        <li>AWS Certified Cloud Practitioner</li>
+        <li>Google Project Management Professional Certificate</li>
+      </ul>
+    </section>
+    </div>
 
     <section>
       <h2>Skills</h2>
@@ -190,16 +209,6 @@
       </div>
       </div>
     </section>
-
-    <section>
-      <h2>Certifications</h2>
-      <ul class="cert-list">
-        <li>AWS Certified Solutions Architect – Associate</li>
-        <li>AWS Certified Cloud Practitioner</li>
-        <li>Google Project Management Professional Certificate</li>
-      </ul>
-    </section>
-
     <section id="contact">
       <h2>Contact</h2>
       <p>Open to cloud, IT, technical management, and data center related roles.</p>
