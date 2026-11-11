@@ -488,3 +488,10 @@ section > ul.cert-list li:last-child { border-bottom: 0; }
   #experience, .pair { grid-template-columns: 1fr; }
   #experience > h2 { grid-column: auto; }
 }
+
+/* One body size for the other sections (Experience, Leadership, Certifications, Skills, Contact) */
+main section { font-size: 14px; line-height: 1.5; }
+#experience { font-size: 14px; line-height: 1.5; }
+.pair { font-size: 14px; line-height: 1.5; }
+#experience .role h3, .pair .card h3 { font-size: 1rem; }
+#experience .meta, .pair .meta { font-size: 0.85rem; }
