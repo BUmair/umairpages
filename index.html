@@ -149,8 +149,8 @@
         <article class="card">
           <div class="role"><h3>AWS Cloud Infrastructure</h3></div>
           <ul>
-            <li>Designed a VPC with two public subnets, two route tables, and three security groups to segment network access.</li>
-            <li>Applied IAM least-privilege access across users, groups, roles, and policies.</li>
+            <li>Segmented network access with two public subnets, two route tables, and three security groups.</li>
+            <li>Applied least-privilege access with a developer policy scoped to tagged instances and an explicit deny on tag changes.</li>
             <li>Deployed and administered two EC2 instances with remote Linux administration.</li>
             <li>Hosted a static website on Amazon S3 and reviewed public access settings to reduce exposure.</li>
             <li>Documented architecture, access controls, and security configuration for repeatable deployment.</li>
@@ -161,10 +161,10 @@
         <article class="card">
           <h3>AWS Serverless Automation</h3>
           <ul>
-            <li>Built a serverless upload-routing workflow with Lambda and S3 that sends each file type to its own function, reducing manual handling of uploads.</li>
-            <li>Connected three S3 event notifications to Lambda functions, replacing polling with event-driven design to cut idle compute costs.</li>
-            <li>Validated five upload scenarios and resolved 10+ execution failures using CloudWatch logs.</li>
-            <li>Reviewed function permissions to keep automation secure by default.</li>
+            <li>Built a serverless workflow that routes uploads to one of three Lambda functions by file type and folder.</li>
+            <li>Replaced polling with event-driven processing by connecting three S3 event notifications to Lambda, so compute runs only when files arrive.</li>
+            <li>Validated five upload scenarios and resolved five upload and deployment issues using CloudWatch logs.</li>
+            <li>Scoped each Lambda role to read only its own input files and write only to its output folder.</li>
           </ul>
           <div class="tags"><span>Lambda</span><span>S3</span><span>CloudWatch</span></div>
           <a class="doc-link" href="aws-serverless.html">Documentation →</a>
@@ -179,13 +179,26 @@
         <h3>Instructor, Coach &amp; Student · Pencak Silat Indonesian Martial Arts</h3>
           <p class="meta"><span>August 2018 – Present</span></p>
         <ul>
-          <li>Coach 15–20 students across three weekly classes, teaching technical skills in plain language.</li>
+          <li>Coach 15–20 students weekly across three classes.</li>
           <li>Developed seven students who earned competition placements, including five first-place finishes.</li>
           <li>Earned 13 competition medals, including first place at the 2019 North America Championship.</li>
         </ul>
       </article>
     </section>
 
+
+    <section id="education">
+      <h2>Education</h2>
+      <article class="card">
+        <div class="role"><h3>Virginia Tech · B.S. in Computer Science</h3>
+          <p class="meta"><span>Expected May 2028</span></p>
+        </div>
+        <div class="role"><h3>Northern Virginia Community College · A.S. in Computer Science</h3>
+          <p class="meta"><span>May 2026</span></p>
+        </div>
+        <p>GPA 3.70/4.0 · Presidential Scholar · Dean's List</p>
+      </article>
+    </section>
 
     <section>
       <h2>Certifications</h2>
