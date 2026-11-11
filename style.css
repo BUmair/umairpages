@@ -490,7 +490,7 @@ section > ul.cert-list li:last-child { border-bottom: 0; }
 }
 
 /* One body size for the other sections (Experience, Leadership, Certifications, Skills, Contact) */
-main section { font-size: 14px; line-height: 1.5; }
+main:not(.doc) section { font-size: 14px; line-height: 1.5; }
 #experience { font-size: 14px; line-height: 1.5; }
 .pair { font-size: 14px; line-height: 1.5; }
 #experience .role h3, .pair .card h3 { font-size: 1rem; }
@@ -512,20 +512,22 @@ main section { font-size: 14px; line-height: 1.5; }
 #projects .card-links { justify-content: flex-start; margin-top: 12px; }
 #projects .card .doc-link { margin: 12px 0 0; display: inline-block; }
 
-/* Skills: three cards, matching the project cards */
-.skill-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; max-width: none; margin: 0; text-align: left; }
-.skill-group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; text-align: left; }
-.skill-group h3 { font-size: 1rem; font-weight: 600; margin: 0 0 10px; }
-.skill-group .tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-start; margin: 0; }
-.skill-group .tags span { font-size: 0.8rem; padding: 3px 10px; white-space: nowrap; text-align: left; }
-@media (max-width: 960px) {
-  .skill-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 760px) {
-  .skill-groups { grid-template-columns: 1fr; }
-}
 
 /* Phones: drop the separator dot before a wrapped date line */
 @media (max-width: 760px) {
   #experience .role .meta span + span::before { content: none; }
 }
+
+/* Refinements: one heading size, readable project text */
+#experience h2, #projects h2, .pair h2, main:not(.doc) section h2 { font-size: 2.1rem; }
+#projects { font-size: 13px; }
+#projects .tags span { font-size: 0.78rem; }
+#projects .card-links a { font-size: 0.8rem; }
+#projects .meta, #projects .role .meta { font-size: 0.82rem; }
+
+/* Architecture diagrams: scale to the container on phones */
+.diagram img { display: block; width: 100%; height: auto; max-width: 100%; }
+
+/* Experience: no separator dot (it sat at the start of a wrapped date line); spacing separates the fields */
+#experience .role .meta { gap: 0 14px; }
+#experience .role .meta span + span::before { content: none; }
