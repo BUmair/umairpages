@@ -446,3 +446,11 @@ section > ul.cert-list li:last-child { border-bottom: 0; }
 #projects .award { font-size: 0.8rem; }
 #projects .tags span { font-size: 0.75rem; }
 #projects .card-links a { font-size: 0.8rem; }
+
+/* Text size 12px for Projects and Experience */
+#experience, #projects { font-size: 12px; line-height: 1.45; }
+#experience .role h3, #projects .role h3, #projects .card h3 { font-size: 0.85rem; }
+#experience .meta, #projects .meta { font-size: 0.75rem; }
+#projects .award { font-size: 0.7rem; }
+#projects .tags span { font-size: 0.7rem; }
+#projects .card-links a { font-size: 0.7rem; }
