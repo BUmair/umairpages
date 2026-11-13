@@ -308,6 +308,15 @@ section > ul, .card ul, .card ol, .doc ol.steps, .doc ul, .doc ol {
 /* Mobile spacing for the hero */
 .hero .links { margin-top: 32px; }
 .hero .eyebrow { margin-bottom: 4px; }
+.hero .avatar {
+  display: block;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
 
 @media (max-width: 480px) {
   .hero { padding: 72px 20px 56px; }
