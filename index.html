@@ -115,7 +115,7 @@
             <li>Scoped the Lambda role to four DynamoDB actions on a single table.</li>
           </ul>
           <div class="tags"><span>API Gateway</span><span>Lambda</span><span>DynamoDB</span><span>Cognito</span></div>
-          <div class="card-links"><a href="aws-rest-api.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-02-serverless-api" target="_blank" rel="noopener">Source →</a></div>
+          <div class="card-links"><a href="aws-rest-api.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-05-serverless-api" target="_blank" rel="noopener">Source →</a></div>
         </article>
       </div>
       <div class="col">
@@ -135,18 +135,16 @@
           <div class="card-links"><a href="https://bumair.github.io/neon-tower-defense/" target="_blank" rel="noopener">Play it →</a><a href="https://github.com/BUmair/neon-tower-defense" target="_blank" rel="noopener">Source code →</a></div>
         </article>
         <article class="card">
-          <h3>Static Site on S3 + CloudFront</h3>
+          <h3>AWS Serverless Automation</h3>
           <ul>
-            <li>Hosted a website in a private S3 bucket, with Block Public Access on and no public read access.</li>
-            <li>Served it over HTTPS through CloudFront using Origin Access Control, scoped to one distribution.</li>
-            <li>Verified that the direct S3 URL returns AccessDenied while the CloudFront URL serves the page.</li>
-            <li>Traced an AccessDenied error to a blank default root object and fixed it.</li>
+            <li>Built a serverless workflow that routes uploads to one of three Lambda functions by file type and folder.</li>
+            <li>Replaced polling with event-driven processing by connecting three S3 event notifications to Lambda, so compute runs only when files arrive.</li>
+            <li>Validated five upload scenarios and resolved five upload and deployment issues using CloudWatch logs.</li>
+            <li>Scoped each Lambda role to read only its own input files and write only to its output folder.</li>
           </ul>
-          <div class="tags"><span>S3</span><span>CloudFront</span><span>OAC</span><span>IAM</span></div>
-          <div class="card-links"><a href="aws-static-site.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-01-static-site-s3-cloudfront" target="_blank" rel="noopener">Source →</a></div>
+          <div class="tags"><span>Lambda</span><span>S3</span><span>CloudWatch</span></div>
+          <div class="card-links"><a href="aws-serverless.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-04-serverless-automation" target="_blank" rel="noopener">Source →</a></div>
         </article>
-      </div>
-      <div class="col">
         <article class="card">
           <div class="role"><h3>AWS Cloud Infrastructure</h3></div>
           <ul>
@@ -157,18 +155,31 @@
             <li>Documented architecture, access controls, and security configuration for repeatable deployment.</li>
           </ul>
           <div class="tags"><span>AWS</span><span>EC2</span><span>S3</span><span>IAM</span><span>VPC</span></div>
-          <a class="doc-link" href="aws-infrastructure.html">Documentation →</a>
+          <div class="card-links"><a href="aws-infrastructure.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-03-aws-cloud-infrastructure" target="_blank" rel="noopener">Source →</a></div>
+        </article>
+      </div>
+      <div class="col">
+        <article class="card">
+          <h3>Static Site on S3 + CloudFront</h3>
+          <ul>
+            <li>Hosted a website in a private S3 bucket, with Block Public Access on and no public read access.</li>
+            <li>Served it over HTTPS through CloudFront using Origin Access Control, scoped to one distribution.</li>
+            <li>Verified that the direct S3 URL returns AccessDenied while the CloudFront URL serves the page.</li>
+            <li>Traced an AccessDenied error to a blank default root object and fixed it.</li>
+          </ul>
+          <div class="tags"><span>S3</span><span>CloudFront</span><span>OAC</span><span>IAM</span></div>
+          <div class="card-links"><a href="aws-static-site.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-02-static-site-s3-cloudfront" target="_blank" rel="noopener">Source →</a></div>
         </article>
         <article class="card">
-          <h3>AWS Serverless Automation</h3>
+          <h3>AWS IAM Access Control</h3>
           <ul>
-            <li>Built a serverless workflow that routes uploads to one of three Lambda functions by file type and folder.</li>
-            <li>Replaced polling with event-driven processing by connecting three S3 event notifications to Lambda, so compute runs only when files arrive.</li>
-            <li>Validated five upload scenarios and resolved five upload and deployment issues using CloudWatch logs.</li>
-            <li>Scoped each Lambda role to read only its own input files and write only to its output folder.</li>
+            <li>Launched production and development EC2 instances and tagged each one by environment.</li>
+            <li>Wrote a JSON IAM policy that allows EC2 actions only on instances tagged Env=development, with an explicit deny on tag changes.</li>
+            <li>Created a user group and user, then tested in a separate login that development instances can be stopped and production instances cannot.</li>
+            <li>Set an account alias for a readable sign-in URL, then removed all resources to avoid charges.</li>
           </ul>
-          <div class="tags"><span>Lambda</span><span>S3</span><span>CloudWatch</span></div>
-          <a class="doc-link" href="aws-serverless.html">Documentation →</a>
+          <div class="tags"><span>AWS</span><span>EC2</span><span>IAM</span><span>Policies</span></div>
+          <div class="card-links"><a href="aws-iam.html">Documentation →</a><a href="https://github.com/BUmair/aws-projects/tree/main/project-01-iam-access-control" target="_blank" rel="noopener">Source →</a></div>
         </article>
       </div>
     </div>

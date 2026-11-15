@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tag-based IAM access control on AWS: a developer policy that can manage only development EC2 instances, tested with a separate user login.">
+  <title>AWS IAM Access Control · Documentation</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body id="top">
+  <main class="doc">
+    <p class="back"><a href="index.html#projects">← Back to portfolio</a></p>
+
+    <header class="doc-head">
+      <p class="eyebrow">Project documentation</p>
+      <h1>AWS IAM Access Control</h1>
+      <p class="lede">Outcome: a developer can stop development EC2 instances but cannot touch production ones. The rule is set by a tag, and a separate user login confirms it works.</p>
+    </header>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#overview">Overview</a>
+      <a href="#decisions">Decisions</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#verification">Checks</a>
+      <a href="#issues">Watch-outs</a>
+      <a href="#next">What's next</a>
+    </nav>
+
+    <section id="overview">
+      <h2>What I built</h2>
+      <p>Two EC2 instances, one tagged for production and one for development. A JSON policy allows EC2 actions only on instances tagged <code>Env=development</code>, and an explicit deny blocks tag changes. The policy is attached to a user group, and a new developer user joins that group. An account alias gives the sign-in page a readable URL.</p>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+    <section id="decisions">
+      <h2>Decisions</h2>
+      <ul>
+        <li><strong>Access by tag, not by instance ID.</strong> The condition matches <code>Env=development</code>, so any new development instance is covered as soon as it is tagged.</li>
+        <li><strong>An explicit deny on tag changes.</strong> <code>ec2:CreateTags</code> and <code>ec2:DeleteTags</code> are denied, so a developer can't remove or change a tag to get around the rule.</li>
+        <li><strong>Permissions through a group.</strong> The policy is attached to <code>dev-group</code>, and users inherit it by membership. Adding the next developer takes one step.</li>
+        <li><strong>Read access everywhere.</strong> <code>ec2:Describe*</code> is allowed on all resources, so the developer can see what is running, including production, without being able to change it.</li>
+        <li><strong>Account alias for sign-in.</strong> A readable alias replaces the 12-digit account ID in the sign-in URL.</li>
+      </ul>
+      <p>The policy. It has one allow for development instances, one allow for read-only describe calls, and one deny for tag changes:</p>
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "ec2:*",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "ec2:ResourceTag/Env": "development"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": "ec2:Describe*",
+      "Resource": "*"
+    },
+    {
+      "Effect": "Deny",
+      "Action": [
+        "ec2:DeleteTags",
+        "ec2:CreateTags"
+      ],
+      "Resource": "*"
+    }
+  ]
+}</code></pre>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <p>Read the diagram in numbered order. The developer's user belongs to a group that holds the policy. The policy's condition decides which instances the request can reach.</p>
+      <figure class="diagram">
+        <svg viewBox="0 0 720 400" role="img" aria-labelledby="iam-title iam-desc">
+          <title id="iam-title">IAM access by tag</title>
+          <desc id="iam-desc">A developer user belongs to a group with a policy attached. The policy allows actions on the development instance, which is tagged Env=development. The production instance does not match and is denied.</desc>
+          <defs><marker id="arw-iam" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fff"/></marker></defs>
+
+          <rect x="20" y="150" width="150" height="100" rx="14" fill="#0a0a0a" stroke="#fff" stroke-width="2"/>
+          <text x="95" y="190" fill="#fff" font-size="20" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">Developer</text>
+          <text x="95" y="218" fill="#fff" font-size="14" text-anchor="middle" font-family="Geist, sans-serif">dev-user</text>
+
+          <line x1="172" y1="200" x2="210" y2="200" stroke="#fff" stroke-width="2" marker-end="url(#arw-iam)"/>
+          <rect x="212" y="150" width="170" height="100" rx="14" fill="#0a0a0a" stroke="#fff" stroke-width="2"/>
+          <text x="297" y="186" fill="#fff" font-size="18" font-weight="600" text-anchor="middle" font-family="Geist, sans-serif">User group</text>
+          <text x="297" y="210" fill="#fff" font-size="14" text-anchor="middle" font-family="Geist, sans-serif">dev-group</text>
+          <text x="297" y="232" fill="#fff" font-size="14" text-anchor="middle" font-family="Geist, sans-serif">policy attached</text>
+
+          <line x1="384" y1="180" x2="428" y2="90" stroke="#fff" stroke-width="2" marker-end="url(#arw-iam)"/>
+          <line x1="384" y1="220" x2="428" y2="310" stroke="#fff" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arw-iam)"/>
+
+          <rect x="430" y="50" width="270" height="80" rx="12" fill="#fff"/>
+          <text x="565" y="84" fill="#000" font-size="18" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">Dev instance</text>
+          <text x="565" y="110" fill="#000" font-size="14" text-anchor="middle" font-family="Geist, sans-serif">Env=development</text>
+
+          <rect x="430" y="270" width="270" height="80" rx="12" fill="#0a0a0a" stroke="#fff" stroke-width="2"/>
+          <text x="565" y="304" fill="#fff" font-size="18" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">Prod instance</text>
+          <text x="565" y="330" fill="#fff" font-size="14" text-anchor="middle" font-family="Geist, sans-serif">Env=production</text>
+
+          <text x="450" y="150" fill="#fff" font-size="14" font-family="Geist, sans-serif">allowed</text>
+          <text x="450" y="268" fill="#fff" font-size="14" font-family="Geist, sans-serif">denied</text>
+
+          <circle cx="182" cy="176" r="14" fill="#fff"/>
+          <text x="182" y="182" fill="#000" font-size="16" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">1</text>
+          <circle cx="408" cy="108" r="14" fill="#fff"/>
+          <text x="408" y="114" fill="#000" font-size="16" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">2</text>
+          <circle cx="408" cy="292" r="14" fill="#fff"/>
+          <text x="408" y="298" fill="#000" font-size="16" font-weight="700" text-anchor="middle" font-family="Geist, sans-serif">3</text>
+        </svg>
+        <figcaption><strong>1</strong> The developer's user is a member of the group. <strong>2</strong> The policy allows EC2 actions on the instance tagged <code>Env=development</code>. <strong>3</strong> The production instance does not match the condition, so the same actions are refused.</figcaption>
+      </figure>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+    <section id="verification">
+      <h2>Checks</h2>
+      <p>These are the checks that confirm the policy does what it is meant to do. Each one is run while signed in as the developer user, in a separate incognito window.</p>
+      <table>
+        <thead><tr><th>#</th><th>Action as developer</th><th>Expected result</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Stop the development instance</td><td>Succeeds</td></tr>
+          <tr><td>2</td><td>Stop the production instance</td><td>Refused with an authorization error</td></tr>
+          <tr><td>3</td><td>Add or remove a tag on any instance</td><td>Refused by the explicit deny</td></tr>
+          <tr><td>4</td><td>List instances in the console</td><td>Both instances are visible</td></tr>
+        </tbody>
+      </table>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+    <section id="issues">
+      <h2>Watch-outs</h2>
+      <ul>
+        <li><strong>The sign-in URL used an old account alias.</strong> The group policy and the user were set up under a new alias, but the account still had an older alias, so the sign-in link did not match what I expected. Check the current alias in the IAM dashboard before sharing the sign-in URL.</li>
+        <li><strong>An instance without the tag gets no development access.</strong> The condition checks the tag, so an untagged instance is treated as production. Tag every instance when it is launched.</li>
+        <li><strong>Skipping the key pair and forced password change is for practice only.</strong> Both steps are fine for a lab, but a real environment should use a key pair and require a password change on first sign-in.</li>
+        <li><strong>Leftover resources cost money.</strong> Delete both instances, the group, the user, the policy, and the account alias when finished.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+    <section id="next">
+      <h2>What's next</h2>
+      <ul>
+        <li>Turn on MFA for the admin account and for every IAM user.</li>
+        <li>Test each new policy with the IAM Policy Simulator before attaching it to a group.</li>
+      </ul>
+      <p class="to-top"><a href="#top">Back to top ↑</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="year"></span> Umair Bhalli</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
