@@ -487,10 +487,11 @@ section > ul.cert-list li { height: 31px; display: flex; align-items: center; }
 @media (max-width: 960px) {
   #projects .col:nth-child(1) > .card:nth-child(1) { order: 1; }  /* Clear Home */
   #projects .col:nth-child(2) > .card:nth-child(1) { order: 2; }  /* Neon Tower Defense */
-  #projects .col:nth-child(3) > .card:nth-child(1) { order: 3; }  /* AWS Cloud Infrastructure */
-  #projects .col:nth-child(3) > .card:nth-child(2) { order: 4; }  /* AWS Serverless Automation */
-  #projects .col:nth-child(2) > .card:nth-child(2) { order: 5; }  /* Static Site */
-  #projects .col:nth-child(1) > .card:nth-child(2) { order: 6; }  /* Serverless REST API */
+  #projects .col:nth-child(1) > .card:nth-child(2) { order: 3; }  /* AWS Serverless REST API */
+  #projects .col:nth-child(2) > .card:nth-child(2) { order: 4; }  /* AWS Serverless Automation */
+  #projects .col:nth-child(2) > .card:nth-child(3) { order: 5; }  /* AWS Cloud Infrastructure */
+  #projects .col:nth-child(3) > .card:nth-child(1) { order: 6; }  /* AWS Static Site */
+  #projects .col:nth-child(3) > .card:nth-child(2) { order: 7; }  /* AWS IAM Access Control */
 }
 @media (max-width: 960px) {
   #experience .pair-col { display: contents; }
